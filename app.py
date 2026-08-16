@@ -47,6 +47,7 @@ from notes import (
     CRIME_NOTES, LAND_INFRA_NOTES, ADDITIONALITY_NOTES,
 )
 from branding import inject_brand_css, render_brand_table, brand_callout, render_header, render_stat_row
+from admin import render_admin_panel
 
 st.set_page_config(page_title="TCL Appraisal Model", layout="wide")
 inject_brand_css()
@@ -268,6 +269,7 @@ if "guidance_done" not in st.session_state:
     st.session_state.guidance_done = False
 
 assumptions = get_assumptions()
+render_admin_panel(get_assumptions.clear)
 
 development_mix = st.session_state.development_mix
 place_scenario_controls = st.session_state.place_scenario_controls
