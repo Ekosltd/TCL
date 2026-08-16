@@ -65,6 +65,15 @@ def render_admin_panel(clear_assumptions_cache):
             return
 
         st.success("Admin access granted.")
+
+        # Show the result of the last upload, if there was one
+        if "admin_last_result" in st.session_state:
+            success, message = st.session_state.pop("admin_last_result")
+            if success:
+                st.success(message)
+            else:
+                st.error(message)
+
         st.caption("Upload a new assumptions.xlsx to replace the current version. "
                    "This is committed to GitHub and takes effect immediately.")
 
@@ -76,9 +85,7 @@ def render_admin_panel(clear_assumptions_cache):
                         uploaded.getvalue(),
                         commit_message="Update assumptions.xlsx via admin panel",
                     )
+                st.session_state["admin_last_result"] = (success, message)
                 if success:
-                    st.success(message)
                     clear_assumptions_cache()
-                    st.rerun()
-                else:
-                    st.error(message)
+                st.rerun()
