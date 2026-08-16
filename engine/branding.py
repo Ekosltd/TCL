@@ -6,6 +6,8 @@ import base64
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
+
 
 # Primary colours
 SFT_DARK_GREY = "#434343"
@@ -163,6 +165,22 @@ div[data-baseweb="tab-highlight"] {{
 def inject_brand_css():
     st.markdown(BRAND_CSS, unsafe_allow_html=True)
 
+
+def force_light_mode():
+    """Stops Chrome's 'Auto Dark Mode for Web Contents' from repainting the app,
+    which is a separate, more aggressive feature than normal OS/browser dark mode."""
+    components.html(
+        """
+        <script>
+            var meta = window.parent.document.createElement('meta');
+            meta.name = 'color-scheme';
+            meta.content = 'only light';
+            window.parent.document.head.appendChild(meta);
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
 
 def render_header(title: str):
     """Header bar (SFT_HEADER_BLUE) with the white logo and page title, sitting inside
