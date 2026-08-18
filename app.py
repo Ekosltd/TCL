@@ -452,6 +452,21 @@ if st.session_state.guidance_done and st.session_state.show_results:
         st.markdown(GUIDANCE_RESULTS_INTRO)
         render_guidance_sections(RESULTS_SECTIONS, body_key="description")
 
+    try:
+        dashboard = build_dashboard(
+            development_mix, place_scenario_controls, place_scenario_user_inputs,
+            crime_inputs, land_infra_inputs, commercial_floorspace_inputs,
+            additionality_questions, assumptions,
+        )
+    except (TypeError, ZeroDivisionError, KeyError):
+        st.warning(
+            "Not enough information has been entered to calculate results. "
+            "Please go back to Edit Inputs and check every section has been completed, "
+            "especially any numeric fields."
+        )
+        st.stop()
+    sheets = {}  # collects DataFrames for the Excel export
+
     dashboard = build_dashboard(
         development_mix, place_scenario_controls, place_scenario_user_inputs,
         crime_inputs, land_infra_inputs, commercial_floorspace_inputs,
