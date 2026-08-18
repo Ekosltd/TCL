@@ -16,6 +16,11 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 ENGINE_DIR = Path(__file__).resolve().parent / "engine"
 sys.path.insert(0, str(ENGINE_DIR))
 
+from demo_data import (
+    DEMO_DEVELOPMENT_MIX, DEMO_PLACE_SCENARIO_CONTROLS, DEMO_PLACE_SCENARIO_USER_INPUTS,
+    DEMO_CRIME_INPUTS, DEMO_LAND_INFRA_INPUTS, DEMO_COMMERCIAL_FLOORSPACE_INPUTS,
+    DEMO_ADDITIONALITY_QUESTIONS,
+)
 from load_assumptions import load_assumptions
 from inputs import (
     development_mix as default_development_mix,
@@ -302,6 +307,18 @@ if not st.session_state.guidance_done:
 
     if st.button("Start", type="primary", use_container_width=True):
         st.session_state.guidance_done = True
+        st.rerun()
+
+    if st.button("Load Demo Data (skip to results)", use_container_width=True):
+        st.session_state.development_mix = copy.deepcopy(DEMO_DEVELOPMENT_MIX)
+        st.session_state.place_scenario_controls = copy.deepcopy(DEMO_PLACE_SCENARIO_CONTROLS)
+        st.session_state.place_scenario_user_inputs = copy.deepcopy(DEMO_PLACE_SCENARIO_USER_INPUTS)
+        st.session_state.crime_inputs = copy.deepcopy(DEMO_CRIME_INPUTS)
+        st.session_state.land_infra_inputs = copy.deepcopy(DEMO_LAND_INFRA_INPUTS)
+        st.session_state.commercial_floorspace_inputs = copy.deepcopy(DEMO_COMMERCIAL_FLOORSPACE_INPUTS)
+        st.session_state.additionality_questions = copy.deepcopy(DEMO_ADDITIONALITY_QUESTIONS)
+        st.session_state.guidance_done = True
+        st.session_state.show_results = True
         st.rerun()
 
 # =================================================================================================
