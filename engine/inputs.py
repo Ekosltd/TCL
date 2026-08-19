@@ -124,6 +124,9 @@ def get_incidents_used(category: str, crime_inputs: dict, assumptions: dict) -> 
         return recorded
 
     population = crime_inputs["Town Centre Population"]
+    if population is None:
+        return 0.0
+
     rate_per_1000 = assumptions["crime"].loc[category, "Rate per 1,000"]
     return (population / 1000) * rate_per_1000
 

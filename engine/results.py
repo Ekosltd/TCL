@@ -148,20 +148,20 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
         "Public infrastructure (one off)": infra_oneoff,
     }
 
-    def sens(x):
+    def sens(x, round_to=-3):
         if not isinstance(x, (int, float)):
             return {"-10%": x, "Central": x, "+10%": x}
-        return {"-10%": round(x * 0.9, -3), "Central": round(x * 1.0, -3), "+10%": round(x * 1.1, -3)}
+        return {"-10%": round(x * 0.9, round_to), "Central": round(x * 1.0, round_to), "+10%": round(x * 1.1, round_to)}
 
     econ_fiscal_sensitivity = {
-        "Town Centre spend — Annual value": sens(tc_spend_annual),
-        "Town Centre spend — 10yr NPV": sens(tc_spend_npv),
-        "GVA — Annual value": sens(gva_annual),
-        "GVA — 10yr NPV": sens(gva_npv),
-        "Fiscal — Annual value": sens(fiscal_annual),
-        "Fiscal — 10yr NPV": sens(fiscal_npv),
-        "Land value uplift — 10yr NPV": sens(land_oneoff),
-        "Public infrastructure — 10yr NPV": sens(infra_oneoff),
+        "Town Centre spend -  Annual value": sens(tc_spend_annual),
+        "Town Centre spend - 10yr NPV": sens(tc_spend_npv),
+        "GVA - Annual value": sens(gva_annual),
+        "GVA - 10yr NPV": sens(gva_npv),
+        "Fiscal - Annual value": sens(fiscal_annual),
+        "Fiscal - 10yr NPV": sens(fiscal_npv),
+        "Land value uplift - 10yr NPV": sens(land_oneoff),
+        "Public infrastructure - 10yr NPV": sens(infra_oneoff),
     }
 
     # =============================================================
@@ -180,9 +180,9 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
     cf_fte_annual = commercial["Total"]["Net FTE jobs"]
 
     commercial_floorspace_sensitivity = {
-        "Net additional GVA — Annual value": sens(cf_gva_annual),
-        "Net additional GVA — 10yr NPV": sens(cf_gva_npv),
-        "Net additional FTE jobs — Annual value": sens(cf_fte_annual),
+        "Net additional GVA - Annual value": sens(cf_gva_annual),
+        "Net additional GVA -  10yr NPV": sens(cf_gva_npv),
+        "Net additional FTE jobs - Annual value": sens(cf_fte_annual, round_to=1),
     }
 
     return {

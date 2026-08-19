@@ -548,9 +548,13 @@ if st.session_state.guidance_done and st.session_state.show_results:
     c2.metric("Net additional PYE jobs", f"{con_o['Net additional PYE jobs']:,.0f}")
 
     st.subheader("Commercial Floorspace Impacts")
+    
     cfs_rows = []
     for measure, values in dashboard["commercial_floorspace_sensitivity"].items():
-        cfs_rows.append({"Measure": measure, "-10%": gbp(values["-10%"]), "Central": gbp(values["Central"]), "+10%": gbp(values["+10%"])})
+        if "FTE jobs" in measure: 
+            cfs_rows.append({"Measure": measure, "-10%": f"{values['-10%']:,.0f}", "Central": f"{values['Central']:,.0f}", "+10%": f"{values['+10%']:,.0f}"})
+        else:    
+            cfs_rows.append({"Measure": measure, "-10%": gbp(values["-10%"]), "Central": gbp(values["Central"]), "+10%": gbp(values["+10%"])})
     render_brand_table(pd.DataFrame(cfs_rows))
 
     st.divider()
