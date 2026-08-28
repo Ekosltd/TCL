@@ -30,7 +30,7 @@ from inputs import (
     crime_inputs as default_crime_inputs,
     land_infra_options,
     land_infra_inputs as default_land_infra_inputs,
-    commercial_floorspace_inputs as default_commercial_floorspace_inputs,
+    commercial_floorspace_inputs as default_commercial_floorspace_inputs, pbsa_inputs as default_pbsa_inputs,
     get_floorspace,
 )
 from additionality import additionality_questions as default_additionality_questions
@@ -40,7 +40,7 @@ from calculations import (
     embodied_carbon, environmental_quality, health_wellbeing, civic_engagement,
     travel_time_and_costs, cost_of_crime, economic_activity,
     construction_activity, fiscal, land_values,
-    public_infrastructure, commercial_floorspace_indicator,
+    public_infrastructure, commercial_floorspace_indicator, pbsa_indicator,
 )
 from results import build_dashboard
 from guidance import (
@@ -267,6 +267,8 @@ if "land_infra_inputs" not in st.session_state:
     st.session_state.land_infra_inputs = copy.deepcopy(default_land_infra_inputs)
 if "commercial_floorspace_inputs" not in st.session_state:
     st.session_state.commercial_floorspace_inputs = copy.deepcopy(default_commercial_floorspace_inputs)
+if "pbsa_inputs" not in st.session_state:
+    st.session_state.pbsa_inputs = copy.deepcopy(default_pbsa_inputs)
 if "additionality_questions" not in st.session_state:
     st.session_state.additionality_questions = copy.deepcopy(default_additionality_questions)
 if "show_results" not in st.session_state:
@@ -283,6 +285,7 @@ place_scenario_user_inputs = st.session_state.place_scenario_user_inputs
 crime_inputs = st.session_state.crime_inputs
 land_infra_inputs = st.session_state.land_infra_inputs
 commercial_floorspace_inputs = st.session_state.commercial_floorspace_inputs
+pbsa_inputs = st.session_state.pbsa_inputs
 additionality_questions = st.session_state.additionality_questions
 
 
@@ -435,6 +438,14 @@ elif not st.session_state.show_results:
                 f"{category} (m²)", min_value=0.0, value=float(commercial_floorspace_inputs[category]),
                 key=f"cf_{category}")
 
+        st.divider()
+        st.subheader("Purpose Built Student Accommodation (PBSA)")
+        st.caption("Optional. Enter the number of rooms only — do not include floorspace above for PBSA.")
+        pbsa_key = "Purpose Built Student Accommodation - Number of Rooms"
+        pbsa_inputs[pbsa_key] = st.number_input(
+            "Number of rooms", min_value=0, value=int(pbsa_inputs[pbsa_key]), key="pbsa_rooms")
+
+    
     # --- Additionality Questions ---
     with input_tabs[5]:
         for impact_area, factors in additionality_questions.items():
@@ -472,7 +483,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
     try:
         dashboard = build_dashboard(
             development_mix, place_scenario_controls, place_scenario_user_inputs,
-            crime_inputs, land_infra_inputs, commercial_floorspace_inputs,
+            crime_inputs, land_infra_inputs, commercial_floorspace_inputs,pbsa_inputs,
             additionality_questions, assumptions,
         )
     except (TypeError, ZeroDivisionError, KeyError):
@@ -486,7 +497,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     dashboard = build_dashboard(
         development_mix, place_scenario_controls, place_scenario_user_inputs,
-        crime_inputs, land_infra_inputs, commercial_floorspace_inputs,
+        crime_inputs, land_infra_inputs, commercial_floorspace_inputs, pbsa_inputs,
         additionality_questions, assumptions,
     )
 
@@ -750,8 +761,11 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1.metric("Avoided capital cost per unit", gbp(pi["Avoided capital cost per unit"]))
         c2.metric("Total residential units", f"{pi['Total residential units']:,.0f}")
         c1, c2 = st.columns(2)
-        c1.metric("Gross infrastructure savings", gbp(pi["Gross infrastructure savings"]))
-        c2.metric("Net infrastructure savings", gbp(pi["Net infrastructure savings"]))
+        c1.metric("Gross infrastructure savings (one-off)", gbp(pi["Gross infrastructure savings"]))
+        c2.metric("Net infrastructure savings (one-off)", gbp(pi["Net infrastructure savings"]))
+        c1, c2 = st.columns(2)
+        c1.metric("Gross annual revenue saving", gbp(pi["Gross annual revenue saving"]))
+        c2.metric("Net annual revenue saving", gbp(pi["Net annual revenue saving"]))
         st.write(f"Deadweight {pct(pi['Deadweight'])} - Displacement {pct(pi['Displacement'])} - Leakage {pct(pi['Leakage'])}")
 
     with st.expander("14. Commercial Floorspace (Optional)"):
@@ -772,6 +786,24 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1, c2 = st.columns(2)
         c1.metric("Occupancy-adjusted (75%) jobs", f"{o['Gross FTE jobs']:,.0f}")
         c2.metric("Occupancy-adjusted (75%) GVA", gbp(o["Gross GVA"]))
+
+    with st.expander("14b. Purpose Built Student Accommodation"):
+        pbsa = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
+        sheets["14b. PBSA"] = pd.DataFrame(list(pbsa.items()), columns=["Measure", "Value"]).set_index("Measure")
+        c1, c2 = st.columns(2)
+        c1.metric("Number of rooms", f"{pbsa['Number of rooms']:,.0f}")
+        c2.metric("On-site FTE jobs (e.g. concierge)", f"{pbsa['On-site FTE jobs (e.g. concierge)']:,.2f}")
+        c1, c2 = st.columns(2)
+        c1.metric("Total off-site spend", gbp(pbsa["Total off-site spend"]))
+        c2.metric("Off-site FTE jobs", f"{pbsa['Off-site FTE jobs']:,.2f}")
+        c1, c2 = st.columns(2)
+        c1.metric("Gross total FTE jobs", f"{pbsa['Gross total FTE jobs']:,.2f}")
+        c2.metric("Gross total GVA", gbp(pbsa["Gross total GVA"]))
+        c1, c2 = st.columns(2)
+        c1.metric("Net total FTE jobs", f"{pbsa['Net total FTE jobs']:,.2f}")
+        c2.metric("Net total GVA", gbp(pbsa["Net total GVA"]))
+        st.write(f"Deadweight {pct(pbsa['Deadweight'])} - Displacement {pct(pbsa['Displacement'])} - Multiplier {pbsa['Multiplier']:.3f}x")
+
 
     st.divider()
     st.download_button(

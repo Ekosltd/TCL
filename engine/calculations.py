@@ -246,32 +246,48 @@ def population_by_typology(development_mix: dict, assumptions: dict) -> dict:
 
 def demographic_employment_outputs(development_mix: dict, assumptions: dict) -> dict:
     population = population_by_typology(development_mix, assumptions)
-    total_private = population["Total"]["Private residents"]
-    total_social = population["Total"]["Social residents"]
-
     pop_employ = assumptions["pop_employ"]
 
-    children = round(
-        total_private * pop_employ.loc["Children share", "Private"]
-        + total_social * pop_employ.loc["Children share", "Social/affordable"]
+    older_typology = "Older Persons / Specialist"
+    total_older = population[older_typology]["Total residents"]
+
+    # Everyone NOT in the Older Persons typology still uses Private/Social split
+    total_private_other = sum(
+        values["Private residents"] for typology, values in population.items()
+        if typology not in ("Total", older_typology)
+    )
+    total_social_other = sum(
+        values["Social residents"] for typology, values in population.items()
+        if typology not in ("Total", older_typology)
     )
 
-    working_age = round(
-        total_private * pop_employ.loc["Working age share", "Private"]
-        + total_social * pop_employ.loc["Working age share", "Social/affordable"]
+    children = round(
+        total_private_other * pop_employ.loc["Children share", "Private"]
+        + total_social_other * pop_employ.loc["Children share", "Social/affordable"]
+        + total_older * pop_employ.loc["Children share", "Older person"]
     )
+
+    working_age_other = (
+        total_private_other * pop_employ.loc["Working age share", "Private"]
+        + total_social_other * pop_employ.loc["Working age share", "Social/affordable"]
+    )
+    working_age_older = total_older * pop_employ.loc["Working age share", "Older person"]
+    working_age = round(working_age_other + working_age_older)
 
     older_adults = round(
-        total_private * pop_employ.loc["65+ share", "Private"]
-        + total_social * pop_employ.loc["65+ share", "Social/affordable"]
+        total_private_other * pop_employ.loc["65+ share", "Private"]
+        + total_social_other * pop_employ.loc["65+ share", "Social/affordable"]
+        + total_older * pop_employ.loc["65+ share", "Older person"]
     )
 
-    # Uses the AVERAGE of private/social employment rates (matches original formula B17)
+    # Uses the AVERAGE of private/social employment rates for everyone else (matches original B17),
+    # but the Older person rate for the Older Persons typology
     employed_adults = round(
-        working_age * (
+        working_age_other * (
             (pop_employ.loc["Employment rate", "Private"] + pop_employ.loc["Employment rate", "Social/affordable"])
             / 2
         )
+        + working_age_older * pop_employ.loc["Employment rate", "Older person"]
     )
 
     return {
@@ -490,10 +506,21 @@ def environmental_quality(place_scenario_controls: dict, place_scenario_user_inp
     else:  # Major block/cluster reactivated
         vacant_impact = float(wellbeing.loc["Vacant units LS", "Higher scale impact"])
 
+    # --- Heritage impact ---
+    heritage_answer = place_scenario_controls["Does the town centre living development include proposals to restore building(s) or a site with heritage designation or significance?"]
+    if heritage_answer == "No heritage designation/significance":
+        heritage_impact = 0.0
+    elif heritage_answer == "Locally significant asset / conservation-area contribution":
+        heritage_impact = float(wellbeing.loc["Heritage asset LS", "Lower scale impact"])
+    elif heritage_answer == "Listed building / significant conservation asset":
+        heritage_impact = float(wellbeing.loc["Heritage asset LS", "Central impact"])
+    else:  # Significant town-centre landmark / regionally/nationally significant heritage asset
+        heritage_impact = float(wellbeing.loc["Heritage asset LS", "Higher scale impact"])
+
     life_satisfaction_value = float(general.loc["Life satisfaction value", "Value"])
 
     # --- Gross impact ---
-    gross_annual_value = round(population_500m * (brownfield_impact + vacant_impact) * life_satisfaction_value, -3)
+    gross_annual_value = round(population_500m * (brownfield_impact + vacant_impact + heritage_impact) * life_satisfaction_value, -3)
 
     # --- Net additional impact: Environmental additionality again ---
     additionality = additionality_environmental(additionality_questions)
@@ -508,6 +535,7 @@ def environmental_quality(place_scenario_controls: dict, place_scenario_user_inp
         "Population within 500m": population_500m,
         "Brownfield / gap site impact": brownfield_impact,
         "Vacant units impact": vacant_impact,
+        "Heritage impact": heritage_impact,
         "Life satisfaction value": life_satisfaction_value,
         "Gross annual wellbeing value": gross_annual_value,
         "Deadweight": deadweight,
@@ -515,8 +543,7 @@ def environmental_quality(place_scenario_controls: dict, place_scenario_user_inp
         "Leakage": leakage,
         "Net factor": net_factor,
         "Net additional annual wellbeing value": net_annual_value,
-    } 
-
+    }
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
@@ -1031,6 +1058,7 @@ def public_infrastructure(development_mix: dict, assumptions: dict) -> dict:
     additionality_mappings = assumptions["additionality_mappings"]
 
     avoided_cost_per_unit = float(land_infra_mult.loc["Avoided capital cost per unit for public sector infrastructure", "Value"])
+    annual_revenue_saving_per_unit = float(land_infra_mult.loc["Annual revenue saving per unit for public sector infrastructure", "Value"])
 
     total_units = sum(v["Private Homes"] + v["Social/Affordable Homes"] for v in development_mix.values())
 
@@ -1041,12 +1069,19 @@ def public_infrastructure(development_mix: dict, assumptions: dict) -> dict:
     leakage = float(row["Leakage"])
     multiplier = 1  # hardcoded in original model
 
-    gross_infrastructure_savings = round(avoided_cost_per_unit * total_units, -3)
     net_factor = (1 - deadweight) * (1 - displacement) * (1 - leakage) * multiplier
+
+    # --- One-off capital saving (unchanged) ---
+    gross_infrastructure_savings = round(avoided_cost_per_unit * total_units, -3)
     net_infrastructure_savings = round(gross_infrastructure_savings * net_factor, -3)
+
+    # --- New: annual revenue saving stream ---
+    gross_annual_revenue_saving = round(annual_revenue_saving_per_unit * total_units, -3)
+    net_annual_revenue_saving = round(gross_annual_revenue_saving * net_factor, -3)
 
     return {
         "Avoided capital cost per unit": avoided_cost_per_unit,
+        "Annual revenue saving per unit": annual_revenue_saving_per_unit,
         "Total residential units": total_units,
         "Deadweight": deadweight,
         "Displacement": displacement,
@@ -1055,14 +1090,15 @@ def public_infrastructure(development_mix: dict, assumptions: dict) -> dict:
         "Gross infrastructure savings": gross_infrastructure_savings,
         "Net factor": net_factor,
         "Net infrastructure savings": net_infrastructure_savings,
+        "Gross annual revenue saving": gross_annual_revenue_saving,
+        "Net annual revenue saving": net_annual_revenue_saving,
     }
-
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 
 #################################################################################################################################################################################################################
-### 14. COMMERCIAL FLOORSPACE (Optional — not aggregated into dashboard totals)
+### 14. COMMERCIAL FLOORSPACE 
 #################################################################################################################################################################################################################
 
 def commercial_floorspace_indicator(commercial_floorspace_inputs: dict, additionality_questions: dict, assumptions: dict) -> dict:
@@ -1123,3 +1159,61 @@ def commercial_floorspace_indicator(commercial_floorspace_inputs: dict, addition
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
+
+#################################################################################################################################################################################################################
+### 14b. PURPOSE BUILT STUDENT ACCOMMODATION (PBSA)
+#################################################################################################################################################################################################################
+
+def pbsa_indicator(pbsa_inputs: dict, additionality_questions: dict, assumptions: dict) -> dict:
+    economic_coeff = assumptions["economic_coeff"]
+    commercial = assumptions["commercial_floorspace"]
+
+    rooms = pbsa_inputs["Purpose Built Student Accommodation - Number of Rooms"]
+
+    # --- On-site jobs (e.g. concierge): 1 FTE per 25 rooms ---
+    onsite_fte_jobs = rooms / 25
+
+    # --- Off-site spend: £5,000 per room per year, hardcoded per TCL assumption ---
+    offsite_spend_per_room = 5000
+    total_offsite_spend = rooms * offsite_spend_per_room
+
+    # --- Convert spend to jobs, using the existing turnover-per-job figure ---
+    turnover_per_job = float(economic_coeff.loc["Average turnover per job", "Value"])
+    offsite_jobs = total_offsite_spend / turnover_per_job if turnover_per_job > 0 else 0.0
+
+    # --- Convert to GVA using a blended average of Retail and F&B rates ---
+    retail_gva_per_job = float(commercial.loc["Retail and Town Centre Services", "Avg GVA per FTE job"])
+    fnb_gva_per_job = float(commercial.loc["Food and Beverage / Hospitality", "Avg GVA per FTE job"])
+    avg_gva_per_job = (retail_gva_per_job + fnb_gva_per_job) / 2
+
+    offsite_gva = offsite_jobs * avg_gva_per_job
+
+    gross_total_fte_jobs = onsite_fte_jobs + offsite_jobs
+    gross_total_gva = offsite_gva  # on-site jobs have no GVA attached, per meeting notes
+
+    # --- Additionality: reuses Economic Activity's additionality, same as Commercial Floorspace ---
+    additionality = additionality_economic(additionality_questions, assumptions)
+    deadweight = additionality["Deadweight"]
+    displacement = additionality["Displacement"]
+    multiplier = additionality["Multiplier"]
+    net_factor = (1 - deadweight) * (1 - displacement) * multiplier
+
+    net_total_fte_jobs = gross_total_fte_jobs * net_factor
+    net_total_gva = gross_total_gva * net_factor
+
+    return {
+        "Number of rooms": rooms,
+        "On-site FTE jobs (e.g. concierge)": onsite_fte_jobs,
+        "Total off-site spend": total_offsite_spend,
+        "Net total spend": total_offsite_spend * net_factor,
+        "Off-site FTE jobs": offsite_jobs,
+        "Off-site GVA": offsite_gva,
+        "Gross total FTE jobs": gross_total_fte_jobs,
+        "Gross total GVA": gross_total_gva,
+        "Deadweight": deadweight,
+        "Displacement": displacement,
+        "Multiplier": multiplier,
+        "Net factor": net_factor,
+        "Net total FTE jobs": net_total_fte_jobs,
+        "Net total GVA": net_total_gva,
+    }

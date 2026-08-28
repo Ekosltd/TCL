@@ -1,6 +1,5 @@
 """
-Demo/sample data for presentations. Local-only — never merged into main.
-Inputs and additionality answers based on the Ayr scenario workbook.
+Demo/sample data for presentations
 """
 
 DEMO_DEVELOPMENT_MIX = {

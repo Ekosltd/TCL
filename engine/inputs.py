@@ -74,6 +74,7 @@ place_scenario_options = {
     "Please select the type of development being proposed - retrofit or new build": ["Retrofit development", "New build development", "Mix of retrofit and new build "],
     "Will the town centre living development remove or address Brownfield or gap site(s)": ["Minor/localised", "Moderate/visible", "Major/prominent", "No change / no impact"],
     "Will the town centre living development remove or address vacant unit(s)": ["Isolated vacancy addressed", "Multiple units/frontage restored", "Major block/cluster reactivated", "No change / no impact"],
+    "Does the town centre living development include proposals to restore building(s) or a site with heritage designation or significance?": ["No heritage designation/significance","Locally significant asset / conservation-area contribution","Listed building / significant conservation asset", "Significant town-centre landmark / regionally/nationally significant heritage asset"]
 }
 
 place_scenario_controls = {
@@ -85,6 +86,7 @@ place_scenario_controls = {
     "Please select the type of development being proposed - retrofit or new build": "Mix of retrofit and new build ",
     "Will the town centre living development remove or address Brownfield or gap site(s)": "Moderate/visible",
     "Will the town centre living development remove or address vacant unit(s)": "No change / no impact",
+    "Does the town centre living development include proposals to restore building(s) or a site with heritage designation or significance?": "No heritage designation/significance",
 }
 
 ### NMUMERICAL INPUTS 
@@ -160,4 +162,8 @@ commercial_floorspace_inputs = {
     "Office / Workspace": 0,
     "Community and Civic Uses": 0,
     "Leisure, Culture and Visitor Economy": 0
+}
+
+pbsa_inputs = {
+    "Purpose Built Student Accommodation - Number of Rooms": 0
 }
