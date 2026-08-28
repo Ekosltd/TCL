@@ -435,9 +435,9 @@ elif not st.session_state.show_results:
         st.caption("Optional")
         for category in commercial_floorspace_inputs:
             commercial_floorspace_inputs[category] = st.number_input(
-                f"{category} (m²)", min_value=0.0, value=float(commercial_floorspace_inputs[c\ategory]),
+                f"{category} (m²)", min_value=0.0, value=float(commercial_floorspace_inputs[category]),
                 key=f"cf_{category}")
-
+s
         st.divider()
         st.subheader("Purpose Built Student Accommodation")
         st.caption("Optional. Enter the number of rooms only")
