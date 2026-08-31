@@ -202,6 +202,36 @@ def additionality_land(additionality_questions: dict) -> dict:
         "Multiplier": multiplier,
     }
 
+def additionality_commercial(additionality_questions: dict, assumptions: dict) -> dict:
+
+    # --- Deadweight ---
+    deadweight_answer = additionality_questions["Commercial"]["Deadweight"]["answer"]
+    deadweight_values = {
+        "The floorspace would be unlikely to be developed/brought back into productive use without the intervention": 0.15,
+        "Development/use may have occurred, but at a substantially smaller scale or after a significant delay": 0.25,
+        "A significant proportion of the development/use would probably have occurred anyway": 0.4,
+    }
+    deadweight = deadweight_values[deadweight_answer]
+
+    # --- Displacement ---
+    displacement_answer = additionality_questions["Commercial"]["Displacement"]["answer"]
+    displacement_values = {
+        "Limited local competition / predominantly new activity or activity serving new or unmet demand": 0.1,
+        "Some competition with existing businesses, but a substantial proportion of activity is expected to be additional": 0.2,
+        "Significant competition with existing local businesses or potential relocation from elsewhere within the area": 0.35,
+    }
+    displacement = displacement_values[displacement_answer]
+
+    # --- Multiplier ---
+    # Reuses the same fixed Economic impacts multiplier (matches Excel: Assumptions!E157 = $B$130)
+    multiplier = float(assumptions["land_infra_mult"].loc["Economic impacts multiplier", "Value"])
+
+    return {
+        "Deadweight": deadweight,
+        "Displacement": displacement,
+        "Multiplier": multiplier,
+    }
+
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
 #################################################################################################################################################################################################################
@@ -1104,7 +1134,7 @@ def public_infrastructure(development_mix: dict, assumptions: dict) -> dict:
 def commercial_floorspace_indicator(commercial_floorspace_inputs: dict, additionality_questions: dict, assumptions: dict) -> dict:
     commercial = assumptions["commercial_floorspace"]
 
-    additionality = additionality_economic(additionality_questions, assumptions)
+    additionality = additionality_commercial(additionality_questions, assumptions)
     deadweight = additionality["Deadweight"]
     displacement = additionality["Displacement"]
     multiplier = additionality["Multiplier"]
@@ -1170,29 +1200,26 @@ def pbsa_indicator(pbsa_inputs: dict, additionality_questions: dict, assumptions
 
     rooms = pbsa_inputs["Purpose Built Student Accommodation - Number of Rooms"]
 
-    # --- On-site jobs (e.g. concierge): 1 FTE per 25 rooms ---
     onsite_fte_jobs = rooms / 25
 
-    # --- Off-site spend: £5,000 per room per year, hardcoded per TCL assumption ---
     offsite_spend_per_room = 5000
     total_offsite_spend = rooms * offsite_spend_per_room
 
-    # --- Convert spend to jobs, using the existing turnover-per-job figure ---
     turnover_per_job = float(economic_coeff.loc["Average turnover per job", "Value"])
     offsite_jobs = total_offsite_spend / turnover_per_job if turnover_per_job > 0 else 0.0
 
-    # --- Convert to GVA using a blended average of Retail and F&B rates ---
+    # --- Convert to GVA using a blended average of Retail, F&B, and Leisure/Culture rates ---
     retail_gva_per_job = float(commercial.loc["Retail and Town Centre Services", "Avg GVA per FTE job"])
     fnb_gva_per_job = float(commercial.loc["Food and Beverage / Hospitality", "Avg GVA per FTE job"])
-    avg_gva_per_job = (retail_gva_per_job + fnb_gva_per_job) / 2
+    leisure_gva_per_job = float(commercial.loc["Leisure, Culture and Visitor Economy", "Avg GVA per FTE job"])
+    avg_gva_per_job = (retail_gva_per_job + fnb_gva_per_job + leisure_gva_per_job) / 3
 
     offsite_gva = offsite_jobs * avg_gva_per_job
 
     gross_total_fte_jobs = onsite_fte_jobs + offsite_jobs
-    gross_total_gva = offsite_gva  # on-site jobs have no GVA attached, per meeting notes
+    gross_total_gva = offsite_gva
 
-    # --- Additionality: reuses Economic Activity's additionality, same as Commercial Floorspace ---
-    additionality = additionality_economic(additionality_questions, assumptions)
+    additionality = additionality_commercial(additionality_questions, assumptions)
     deadweight = additionality["Deadweight"]
     displacement = additionality["Displacement"]
     multiplier = additionality["Multiplier"]
