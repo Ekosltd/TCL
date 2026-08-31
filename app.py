@@ -468,7 +468,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
     try:
         dashboard = build_dashboard(
             development_mix, place_scenario_controls, place_scenario_user_inputs,
-            crime_inputs, land_infra_inputs, commercial_floorspace_inputs, pbsa_inputs,
+            crime_inputs, land_infra_inputs, commercial_floorspace_inputs,
             additionality_questions, assumptions,
         )
     except (TypeError, ZeroDivisionError, KeyError):
