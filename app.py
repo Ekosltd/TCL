@@ -16,11 +16,6 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 ENGINE_DIR = Path(__file__).resolve().parent / "engine"
 sys.path.insert(0, str(ENGINE_DIR))
 
-from demo_data import (
-    DEMO_DEVELOPMENT_MIX, DEMO_PLACE_SCENARIO_CONTROLS, DEMO_PLACE_SCENARIO_USER_INPUTS,
-    DEMO_CRIME_INPUTS, DEMO_LAND_INFRA_INPUTS, DEMO_COMMERCIAL_FLOORSPACE_INPUTS,
-    DEMO_ADDITIONALITY_QUESTIONS,
-)
 from load_assumptions import load_assumptions
 from inputs import (
     development_mix as default_development_mix,
@@ -72,7 +67,7 @@ def gbp(x):
 def pct(x):
     if isinstance(x, str):
         return x
-    return f"{x:.1%}"
+    return f"{x:.0%}"
 
 
 @st.cache_resource
@@ -124,20 +119,20 @@ PERCENT_FORMAT = '0.0%'
 PERCENT_LABELS = {"Deadweight", "Displacement", "Leakage", "Net factor"}
 
 MONEY_LABELS = {
-    "Gross £ value", "Net additional £ value", "Carbon value (£/t)",
+    "Gross £ value", "Net additional £ value",
     "Gross annual wellbeing value", "Net additional annual wellbeing value",
     "Gross annual health value", "Net additional annual health value",
-    "Gross travel cost savings", "Gross time savings", "Gross reduced car ownership savings",
     "Gross annual value", "Net additional annual value",
     "Gross TC spend", "Net TC spend", "Gross GVA", "Net GVA", "Net additional GVA",
-    "Capital cost", "Gross fiscal value", "Net additional fiscal value",
-    "Gross council tax", "Gross rental returns",
-    "Total GDV", "Developer return", "Existing use / baseline land value",
+    "Gross fiscal value", "Net additional fiscal value",
     "Gross land value uplift", "Net additional land value uplift",
-    "Avoided capital cost per unit", "Gross infrastructure savings", "Net infrastructure savings",
+    "Gross infrastructure savings (one-off)", "Net infrastructure savings (one-off)",
+    "Gross annual revenue saving", "Net annual revenue saving",
+    "Gross total GVA", "Net total GVA", "Net total spend",
 }
 
 PERCENT_COLUMNS = {"Baseline share", "TCL share"}
+MONEY_COLUMNS = {"Gross value", "Net value", "Gross GVA"}
 
 
 def _append_row(ws, values, formats=None):
@@ -160,17 +155,19 @@ def _format_measure_value_sheet(ws):
             value_cell.number_format = CURRENCY_FORMAT
 
 
-def _format_columns_by_header(ws, percent_columns=None):
+def _format_columns_by_header(ws, percent_columns=None, money_columns=None):
     percent_columns = percent_columns or set()
+    money_columns = money_columns or set()
     if ws.max_row < 2:
         return
     headers = [c.value for c in ws[1]]
     for col_idx, header in enumerate(headers):
-        if header in percent_columns:
+        fmt = PERCENT_FORMAT if header in percent_columns else CURRENCY_FORMAT if header in money_columns else None
+        if fmt:
             for row in ws.iter_rows(min_row=2, min_col=col_idx + 1, max_col=col_idx + 1):
                 for cell in row:
                     if isinstance(cell.value, (int, float)):
-                        cell.number_format = PERCENT_FORMAT
+                        cell.number_format = fmt
 
 
 def build_excel_export(dashboard: dict, sheets: dict[str, pd.DataFrame]) -> bytes:
@@ -244,7 +241,7 @@ def build_excel_export(dashboard: dict, sheets: dict[str, pd.DataFrame]) -> byte
         if df.index.name == "Measure":
             _format_measure_value_sheet(sheet)
         else:
-            _format_columns_by_header(sheet, percent_columns=PERCENT_COLUMNS)
+            _format_columns_by_header(sheet, percent_columns=PERCENT_COLUMNS, money_columns=MONEY_COLUMNS)
 
     buf = BytesIO()
     wb.save(buf)
@@ -310,18 +307,6 @@ if not st.session_state.guidance_done:
 
     if st.button("Start", type="primary", use_container_width=True):
         st.session_state.guidance_done = True
-        st.rerun()
-
-    if st.button("Load Demo Data (skip to results)", use_container_width=True):
-        st.session_state.development_mix = copy.deepcopy(DEMO_DEVELOPMENT_MIX)
-        st.session_state.place_scenario_controls = copy.deepcopy(DEMO_PLACE_SCENARIO_CONTROLS)
-        st.session_state.place_scenario_user_inputs = copy.deepcopy(DEMO_PLACE_SCENARIO_USER_INPUTS)
-        st.session_state.crime_inputs = copy.deepcopy(DEMO_CRIME_INPUTS)
-        st.session_state.land_infra_inputs = copy.deepcopy(DEMO_LAND_INFRA_INPUTS)
-        st.session_state.commercial_floorspace_inputs = copy.deepcopy(DEMO_COMMERCIAL_FLOORSPACE_INPUTS)
-        st.session_state.additionality_questions = copy.deepcopy(DEMO_ADDITIONALITY_QUESTIONS)
-        st.session_state.guidance_done = True
-        st.session_state.show_results = True
         st.rerun()
 
 # =================================================================================================
@@ -437,9 +422,10 @@ elif not st.session_state.show_results:
             commercial_floorspace_inputs[category] = st.number_input(
                 f"{category} (m²)", min_value=0.0, value=float(commercial_floorspace_inputs[category]),
                 key=f"cf_{category}")
+
         st.divider()
-        st.subheader("Purpose Built Student Accommodation")
-        st.caption("Optional. Enter the number of rooms only")
+        st.subheader("Purpose Built Student Accommodation (PBSA)")
+        st.caption("Optional. Enter the number of rooms only — do not include floorspace above for PBSA.")
         pbsa_key = "Purpose Built Student Accommodation - Number of Rooms"
         pbsa_inputs[pbsa_key] = st.number_input(
             "Number of rooms", min_value=0, value=int(pbsa_inputs[pbsa_key]), key="pbsa_rooms")
@@ -482,7 +468,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
     try:
         dashboard = build_dashboard(
             development_mix, place_scenario_controls, place_scenario_user_inputs,
-            crime_inputs, land_infra_inputs, commercial_floorspace_inputs,pbsa_inputs,
+            crime_inputs, land_infra_inputs, commercial_floorspace_inputs, pbsa_inputs,
             additionality_questions, assumptions,
         )
     except (TypeError, ZeroDivisionError, KeyError):
@@ -492,13 +478,6 @@ if st.session_state.guidance_done and st.session_state.show_results:
             "especially any numeric fields."
         )
         st.stop()
-    sheets = {}  # collects DataFrames for the Excel export
-
-    dashboard = build_dashboard(
-        development_mix, place_scenario_controls, place_scenario_user_inputs,
-        crime_inputs, land_infra_inputs, commercial_floorspace_inputs, pbsa_inputs,
-        additionality_questions, assumptions,
-    )
 
     sheets = {}  # collects DataFrames for the Excel export
 
@@ -534,7 +513,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
     c2.metric("Total Residents", f"{co['Total Residents']:,.0f}")
     c3.metric("Working-age Adults", f"{co['Working-age Adults']:,.0f}")
     c4.metric("Employed Adults", f"{co['Employed Adults']:,.0f}")
-    c5.metric("FTE jobs", f"{co['FTE jobs']:,.2f}")
+    c5.metric("FTE jobs", f"{co['FTE jobs']:,.0f}")
 
     st.subheader("Net Additional Economic and Fiscal Value")
     ef_rows = []
@@ -573,17 +552,19 @@ if st.session_state.guidance_done and st.session_state.show_results:
     with st.expander("1. Transport Emissions"):
         mode_calcs = transport_emissions_mode_calculations(place_scenario_controls, development_mix, assumptions)
         df = pd.DataFrame(mode_calcs["modes"]).T
-        sheets["1. Transport Emissions"] = df.copy()
-        df = df.rename(columns={"Baseline share": "Baseline %", "TCL share": "TCL %"})
-        df["Baseline %"] = df["Baseline %"].apply(lambda x: f"{x:.1%}")
-        df["TCL %"] = df["TCL %"].apply(lambda x: f"{x:.1%}")
+        df_display = df.rename(columns={"Baseline share": "Baseline %", "TCL share": "TCL %"})
+        df_display["Baseline %"] = df_display["Baseline %"].apply(lambda x: f"{x:.0%}")
+        df_display["TCL %"] = df_display["TCL %"].apply(lambda x: f"{x:.0%}")
         for c in ["Baseline km", "TCL km", "Emission factor", "Baseline tCO2e", "TCL tCO2e", "Savings tCO2e"]:
-            df[c] = df[c].apply(lambda x: f"{x:,.2f}")
-        render_brand_table(df.reset_index().rename(columns={"index": "Mode"}))
-        st.metric("Gross savings (tCO2e)", f"{mode_calcs['Gross savings']:,.1f}")
+            df_display[c] = df_display[c].apply(lambda x: f"{x:,.0f}")
+        render_brand_table(df_display.reset_index().rename(columns={"index": "Mode"}))
+        st.metric("Gross savings (tCO2e)", f"{mode_calcs['Gross savings']:,.0f}")
 
         v = transport_emissions_valuation(place_scenario_controls, development_mix, additionality_questions, assumptions)
-        sheets["1b. Transport Emissions Value"] = pd.DataFrame(list(v.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["1. Transport Emissions"] = pd.DataFrame(
+            list({"Gross tCO2e saved": v["Gross tCO2e saved"], "Net additional tCO2e saved": v["Net additional tCO2e saved"],
+                  "Gross £ value": v["Gross £ value"], "Net additional £ value": v["Net additional £ value"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
         c1.metric("Gross £ value", gbp(v["Gross £ value"]))
         c2.metric("Net factor", pct(v["Net factor"]))
@@ -592,14 +573,18 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("2. Embodied Carbon"):
         ec = embodied_carbon(development_mix, place_scenario_controls, additionality_questions, assumptions)
-        sheets["2. Embodied Carbon"] = pd.DataFrame(list(ec.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["2. Embodied Carbon"] = pd.DataFrame(
+            list({"Total GIA": ec["Total GIA"], "Gross tCO2e saved": ec["Gross tCO2e saved"],
+                  "Net additional tCO2e saved": ec["Net additional tCO2e saved"],
+                  "Gross £ value": ec["Gross £ value"], "Net additional £ value": ec["Net additional £ value"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
         c1.metric("Total private GIA", f"{ec['Total private GIA']:,.0f} m²")
         c2.metric("Total social GIA", f"{ec['Total social GIA']:,.0f} m²")
         c3.metric("Total GIA", f"{ec['Total GIA']:,.0f} m²")
         c1, c2 = st.columns(2)
-        c1.metric("Proposed carbon factor", f"{ec['Proposed carbon factor']:.1f}")
-        c2.metric("Comparator (baseline) factor", f"{ec['Comparator carbon factor']:.1f}")
+        c1.metric("Proposed carbon factor", f"{ec['Proposed carbon factor']:,.0f}")
+        c2.metric("Comparator (baseline) factor", f"{ec['Comparator carbon factor']:,.0f}")
         c1, c2, c3 = st.columns(3)
         c1.metric("Gross tCO2e saved", f"{ec['Gross tCO2e saved']:,.0f}")
         c2.metric("Gross £ value", gbp(ec["Gross £ value"]))
@@ -608,7 +593,10 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("3. Environmental Quality"):
         eq = environmental_quality(place_scenario_controls, place_scenario_user_inputs, additionality_questions, assumptions)
-        sheets["3. Environmental Quality"] = pd.DataFrame(list(eq.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["3. Environmental Quality"] = pd.DataFrame(
+            list({"Gross annual wellbeing value": eq["Gross annual wellbeing value"],
+                  "Net additional annual wellbeing value": eq["Net additional annual wellbeing value"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
         c1.metric("Population within 500m", f"{eq['Population within 500m']:,.0f}")
         c2.metric("Brownfield / gap site impact", f"{eq['Brownfield / gap site impact']:.4f}")
@@ -622,9 +610,10 @@ if st.session_state.guidance_done and st.session_state.show_results:
         population = population_by_typology(development_mix, assumptions)
         df = pd.DataFrame(population).T
         sheets["4. Resident Population"] = df.copy()
-        for c in df.columns:
-            df[c] = df[c].apply(lambda x: f"{x:,.1f}")
-        render_brand_table(df.reset_index().rename(columns={"index": "Typology"}))
+        df_display = df.copy()
+        for c in df_display.columns:
+            df_display[c] = df_display[c].apply(lambda x: f"{x:,.0f}")
+        render_brand_table(df_display.reset_index().rename(columns={"index": "Typology"}))
         demographics = demographic_employment_outputs(development_mix, assumptions)
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Children", f"{demographics['Children']:,.0f}")
@@ -634,13 +623,16 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("5. Health & Wellbeing"):
         hw = health_wellbeing(place_scenario_controls, development_mix, additionality_questions, assumptions)
-        sheets["5. Health and Wellbeing"] = pd.DataFrame(list(hw.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["5. Health and Wellbeing"] = pd.DataFrame(
+            list({"Gross annual health value": hw["Gross annual health value"],
+                  "Net additional annual health value": hw["Net additional annual health value"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2 = st.columns(2)
-        c1.metric("Total residents (weighted)", f"{hw['Total residents (weighted)']:,.1f}")
-        c2.metric("Minutes uplift / person / week", f"{hw['Minutes uplift per person/week']:.1f}")
+        c1.metric("Total residents (weighted)", f"{hw['Total residents (weighted)']:,.0f}")
+        c2.metric("Minutes uplift / person / week", f"{hw['Minutes uplift per person/week']:,.0f}")
         c1, c2 = st.columns(2)
-        c1.metric("Residents newly meeting threshold", f"{hw['Residents newly meeting threshold']:,.1f}")
-        c2.metric("Residents already active", f"{hw['Residents already active']:,.1f}")
+        c1.metric("Residents newly meeting threshold", f"{hw['Residents newly meeting threshold']:,.0f}")
+        c2.metric("Residents already active", f"{hw['Residents already active']:,.0f}")
         c1, c2 = st.columns(2)
         c1.metric("Gross annual health value", gbp(hw["Gross annual health value"]))
         c2.metric("Net additional annual value", gbp(hw["Net additional annual health value"]))
@@ -648,9 +640,12 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("6. Civic Engagement"):
         ce = civic_engagement(place_scenario_controls, development_mix, additionality_questions, assumptions)
-        sheets["6. Civic Engagement"] = pd.DataFrame(list(ce.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["6. Civic Engagement"] = pd.DataFrame(
+            list({"Gross annual wellbeing value": ce["Gross annual wellbeing value"],
+                  "Net additional annual wellbeing value": ce["Net additional annual wellbeing value"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total residents", f"{ce['Total residents']:,.1f}")
+        c1.metric("Total residents", f"{ce['Total residents']:,.0f}")
         c2.metric("Deprivation uplift", f"{ce['Deprivation uplift']:.4f}")
         c3.metric("Social infrastructure uplift", f"{ce['Social infrastructure uplift']:.4f}")
         c1, c2 = st.columns(2)
@@ -660,11 +655,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("7. Travel Time & Costs"):
         tt = travel_time_and_costs(place_scenario_controls, place_scenario_user_inputs, development_mix, additionality_questions, assumptions)
-        sheets["7. Travel Time and Costs"] = pd.DataFrame(list(tt.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["7. Travel Time and Costs"] = pd.DataFrame(
+            list({"Gross annual value": tt["Gross annual value"],
+                  "Net additional annual value": tt["Net additional annual value"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total residents (weighted)", f"{tt['Total residents (weighted)']:,.1f}")
-        c2.metric("Total households", f"{tt['Total households']:,.1f}")
-        c3.metric("Households with 1+ car", f"{tt['Households with 1+ car']:,.1f}")
+        c1.metric("Total residents (weighted)", f"{tt['Total residents (weighted)']:,.0f}")
+        c2.metric("Total households", f"{tt['Total households']:,.0f}")
+        c3.metric("Households with 1+ car", f"{tt['Households with 1+ car']:,.0f}")
         c1, c2, c3 = st.columns(3)
         c1.metric("Travel cost savings", gbp(tt["Gross travel cost savings"]))
         c2.metric("Time savings", gbp(tt["Gross time savings"]))
@@ -677,13 +675,15 @@ if st.session_state.guidance_done and st.session_state.show_results:
     with st.expander("8. Cost of Crime"):
         crime = cost_of_crime(crime_inputs, additionality_questions, assumptions)
         rows = []
+        key_rows = []
         for category in ["Violence", "Theft", "Criminal damage", "ASB"]:
             r = crime[category]
-            rows.append({"Category": category, "Incidents used": f"{r['Incidents used']:.1f}",
+            rows.append({"Category": category, "Incidents used": f"{r['Incidents used']:,.0f}",
                          "Reduction rate": pct(r["Reduction rate"]), "Cost/incident": gbp(r["Cost per incident"]),
                          "Gross value": gbp(r["Gross value"]), "Net value": gbp(r["Net value"])})
+            key_rows.append({"Category": category, "Gross value": r["Gross value"], "Net value": r["Net value"]})
         crime_df = pd.DataFrame(rows).set_index("Category")
-        sheets["8. Cost of Crime"] = crime_df.copy()
+        sheets["8. Cost of Crime"] = pd.DataFrame(key_rows).set_index("Category")
         render_brand_table(crime_df.reset_index())
         c1, c2 = st.columns(2)
         c1.metric("Total gross value", gbp(crime["Total"]["Gross value"]))
@@ -696,12 +696,15 @@ if st.session_state.guidance_done and st.session_state.show_results:
         for row_name in ["Private detached", "Private semi/terrace", "Private low-rise flat", "Private higher density flat", "Private older persons",
                           "Social detached", "Social semi/terrace", "Social low-rise flat", "Social higher density flat", "Social older persons"]:
             r = econ[row_name]
-            rows.append({"Row": row_name, "Households": f"{r['Households']:.0f}", "Gross spend": gbp(r["Gross TC spend"]),
-                         "Gross jobs": f"{r['Gross FTE jobs']:.2f}", "Gross GVA": gbp(r["Gross GVA"])})
+            rows.append({"Row": row_name, "Households": f"{r['Households']:,.0f}", "Gross spend": gbp(r["Gross TC spend"]),
+                         "Gross jobs": f"{r['Gross FTE jobs']:,.0f}", "Gross GVA": gbp(r["Gross GVA"])})
         econ_df = pd.DataFrame(rows).set_index("Row")
-        sheets["9. Economic Activity"] = econ_df.copy()
         render_brand_table(econ_df.reset_index())
         t = econ["Total"]
+        sheets["9. Economic Activity"] = pd.DataFrame(
+            list({"Gross TC spend": t["Gross TC spend"], "Gross FTE jobs": t["Gross FTE jobs"], "Gross GVA": t["Gross GVA"],
+                  "Net TC spend": t["Net TC spend"], "Net FTE jobs": t["Net FTE jobs"], "Net GVA": t["Net GVA"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
         c1.metric("Total gross spend", gbp(t["Gross TC spend"]))
         c2.metric("Total gross jobs", f"{t['Gross FTE jobs']:,.0f}")
@@ -710,11 +713,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1.metric("Total net spend", gbp(t["Net TC spend"]))
         c2.metric("Total net jobs", f"{t['Net FTE jobs']:,.0f}")
         c3.metric("Total net GVA", gbp(t["Net GVA"]))
-        st.write(f"Net factor: {econ['Net factor']:.4f}")
+        st.write(f"Net factor: {pct(econ['Net factor'])}")
 
     with st.expander("10. Construction"):
         con = construction_activity(place_scenario_user_inputs, additionality_questions, assumptions)
-        sheets["10. Construction"] = pd.DataFrame(list(con.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["10. Construction"] = pd.DataFrame(
+            list({"Gross PYE jobs": con["Gross PYE jobs"], "Gross GVA": con["Gross GVA"],
+                  "Net additional PYE jobs": con["Net additional PYE jobs"], "Net additional GVA": con["Net additional GVA"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
         c1.metric("Capital cost", gbp(con["Capital cost"]))
         c2.metric("Gross PYE jobs", f"{con['Gross PYE jobs']:,.0f}")
@@ -723,11 +729,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1.metric("Net additional PYE jobs", f"{con['Net additional PYE jobs']:,.0f}")
         c2.metric("Net additional GVA", gbp(con["Net additional GVA"]))
         st.write(f"Deadweight {pct(con['Deadweight'])} - Displacement {pct(con['Displacement'])} - "
-                 f"Leakage {pct(con['Leakage'])} - Multiplier {con['Multiplier']:.3f}x")
+                 f"Leakage {pct(con['Leakage'])} - Multiplier {con['Multiplier']:.2f}x")
 
     with st.expander("11. Fiscal"):
         fis = fiscal(development_mix, additionality_questions, assumptions)
-        sheets["11. Fiscal"] = pd.DataFrame(list(fis.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["11. Fiscal"] = pd.DataFrame(
+            list({"Gross fiscal value": fis["Gross fiscal value"],
+                  "Net additional fiscal value": fis["Net additional fiscal value"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
         c1.metric("Gross council tax", gbp(fis["Gross council tax"]))
         c2.metric("Gross rental returns", gbp(fis["Gross rental returns"]))
@@ -737,7 +746,10 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("12. Land Values"):
         lv = land_values(land_infra_inputs, place_scenario_user_inputs, additionality_questions, assumptions)
-        sheets["12. Land Values"] = pd.DataFrame(list(lv.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["12. Land Values"] = pd.DataFrame(
+            list({"Gross land value uplift": lv["Gross land value uplift"],
+                  "Net additional land value uplift": lv["Net additional land value uplift"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         if lv["Total GDV"] == "N/A":
             st.warning("Land Values not assessed, qualifier answered 'No' in Land & Infrastructure inputs.")
         elif isinstance(lv["Gross land value uplift"], str):
@@ -755,7 +767,12 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("13. Public Infrastructure"):
         pi = public_infrastructure(development_mix, assumptions)
-        sheets["13. Public Infrastructure"] = pd.DataFrame(list(pi.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["13. Public Infrastructure"] = pd.DataFrame(
+            list({"Gross infrastructure savings (one-off)": pi["Gross infrastructure savings"],
+                  "Net infrastructure savings (one-off)": pi["Net infrastructure savings"],
+                  "Gross annual revenue saving": pi["Gross annual revenue saving"],
+                  "Net annual revenue saving": pi["Net annual revenue saving"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2 = st.columns(2)
         c1.metric("Avoided capital cost per unit", gbp(pi["Avoided capital cost per unit"]))
         c2.metric("Total residential units", f"{pi['Total residential units']:,.0f}")
@@ -770,12 +787,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
     with st.expander("14. Commercial Floorspace (Optional)"):
         cf = commercial_floorspace_indicator(commercial_floorspace_inputs, additionality_questions, assumptions)
         rows = []
+        key_rows = []
         for category in commercial_floorspace_inputs:
             r = cf[category]
             rows.append({"Category": category, "Floorspace (m²)": f"{r['Floorspace']:,.0f}",
-                         "FTE jobs": f"{r['FTE jobs']:.2f}", "Gross GVA": gbp(r["Gross GVA"])})
+                         "FTE jobs": f"{r['FTE jobs']:,.0f}", "Gross GVA": gbp(r["Gross GVA"])})
+            key_rows.append({"Category": category, "FTE jobs": r["FTE jobs"], "Gross GVA": r["Gross GVA"]})
         cf_df = pd.DataFrame(rows).set_index("Category")
-        sheets["14. Commercial Floorspace"] = cf_df.copy()
+        sheets["14. Commercial Floorspace"] = pd.DataFrame(key_rows).set_index("Category")
         render_brand_table(cf_df.reset_index())
         t = cf["Total"]
         o = cf["Occupancy-adjusted (75%)"]
@@ -788,20 +807,24 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     with st.expander("14b. Purpose Built Student Accommodation"):
         pbsa = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
-        sheets["14b. PBSA"] = pd.DataFrame(list(pbsa.items()), columns=["Measure", "Value"]).set_index("Measure")
+        sheets["14b. PBSA"] = pd.DataFrame(
+            list({"Gross total FTE jobs": pbsa["Gross total FTE jobs"], "Gross total GVA": pbsa["Gross total GVA"],
+                  "Net total FTE jobs": pbsa["Net total FTE jobs"], "Net total GVA": pbsa["Net total GVA"],
+                  "Net total spend": pbsa["Net total spend"]}.items()),
+            columns=["Measure", "Value"]).set_index("Measure")
         c1, c2 = st.columns(2)
         c1.metric("Number of rooms", f"{pbsa['Number of rooms']:,.0f}")
-        c2.metric("On-site FTE jobs (e.g. concierge)", f"{pbsa['On-site FTE jobs (e.g. concierge)']:,.2f}")
+        c2.metric("On-site FTE jobs (e.g. concierge)", f"{pbsa['On-site FTE jobs (e.g. concierge)']:,.0f}")
         c1, c2 = st.columns(2)
         c1.metric("Total off-site spend", gbp(pbsa["Total off-site spend"]))
-        c2.metric("Off-site FTE jobs", f"{pbsa['Off-site FTE jobs']:,.2f}")
+        c2.metric("Off-site FTE jobs", f"{pbsa['Off-site FTE jobs']:,.0f}")
         c1, c2 = st.columns(2)
-        c1.metric("Gross total FTE jobs", f"{pbsa['Gross total FTE jobs']:,.2f}")
+        c1.metric("Gross total FTE jobs", f"{pbsa['Gross total FTE jobs']:,.0f}")
         c2.metric("Gross total GVA", gbp(pbsa["Gross total GVA"]))
         c1, c2 = st.columns(2)
-        c1.metric("Net total FTE jobs", f"{pbsa['Net total FTE jobs']:,.2f}")
+        c1.metric("Net total FTE jobs", f"{pbsa['Net total FTE jobs']:,.0f}")
         c2.metric("Net total GVA", gbp(pbsa["Net total GVA"]))
-        st.write(f"Deadweight {pct(pbsa['Deadweight'])} - Displacement {pct(pbsa['Displacement'])} - Multiplier {pbsa['Multiplier']:.3f}x")
+        st.write(f"Deadweight {pct(pbsa['Deadweight'])} - Displacement {pct(pbsa['Displacement'])} - Multiplier {pbsa['Multiplier']:.2f}x")
 
 
     st.divider()

@@ -110,4 +110,24 @@ additionality_questions = {
             "answer": "No/unlikely to have any notable effect",
         },
     },
+    "Commercial":{
+        "Deadweight":{
+            "question": "What is most likely to have happened to the proposed commercial floorspace in the absence of the Town Centre Living intervention?",
+            "options":[
+                "The floorspace would be unlikely to be developed/brought back into productive use without the intervention",
+                "Development/use may have occurred, but at a substantially smaller scale or after a significant delay",
+                "A significant proportion of the development/use would probably have occurred anyway"
+            ],
+            "answer":"The floorspace would be unlikely to be developed/brought back into productive use without the intervention"
+        },
+        "Displacement":{
+            "question":"To what extent is the commercial activity expected to occupy the floorspace likely to relocate from, or compete directly with, existing businesses elsewhere within the town centre?",
+            "options":[
+                "Significant competition with existing local businesses or potential relocation from elsewhere within the area",
+                "Some competition with existing businesses, but a substantial proportion of activity is expected to be additional",
+                "Limited local competition / predominantly new activity or activity serving new or unmet demand"
+            ],
+            "answer":"Limited local competition / predominantly new activity or activity serving new or unmet demand"
+        },
+    }
 }
