@@ -546,6 +546,12 @@ if st.session_state.guidance_done and st.session_state.show_results:
             cfs_rows.append({"Measure": measure, "-10%": gbp(values["-10%"]), "Central": gbp(values["Central"]), "+10%": gbp(values["+10%"])})
     render_brand_table(pd.DataFrame(cfs_rows))
 
+    st.subheader("PBSA Impacts (Supplementary)")
+    pbsa_dashboard = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
+    c1, c2 = st.columns(2)
+    c1.metric("Net total FTE jobs", f"{pbsa_dashboard['Net total FTE jobs']:,.0f}")
+    c2.metric("Net total GVA", gbp(pbsa_dashboard["Net total GVA"]))
+
     st.divider()
     st.header("Detailed Impacts")
 
