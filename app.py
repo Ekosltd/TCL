@@ -63,6 +63,16 @@ def gbp(x):
         return x
     return f"£{x:,.0f}"
 
+def gbp_compact(x):
+    if isinstance(x, str):
+        return x
+    abs_x = abs(x)
+    if abs_x >= 1_000_000:
+        return f"£{x/1_000_000:,.1f}m"
+    elif abs_x >= 1_000:
+        return f"£{x/1_000:,.0f}k"
+    else:
+        return f"£{x:,.0f}"
 
 def pct(x):
     if isinstance(x, str):
@@ -485,26 +495,26 @@ if st.session_state.guidance_done and st.session_state.show_results:
 
     st.subheader("Net Additional Social Value")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Annual", gbp(dashboard["social_value"]["Annual"]))
-    c2.metric("10-Year NPV", gbp(dashboard["social_value"]["10-Year NPV"]))
-    c3.metric("Social value per home (10yr NPV)", gbp(dashboard["social_value"]["Social value per home (10yr NPV)"]))
+    c1.metric("Annual", gbp_compact(dashboard["social_value"]["Annual"]))
+    c2.metric("10-Year NPV", gbp_compact(dashboard["social_value"]["10-Year NPV"]))
+    c3.metric("Social value per home (10yr NPV)", gbp_compact(dashboard["social_value"]["Social value per home (10yr NPV)"]))
 
     st.markdown("**Social Value Sensitivity (±10%)**")
     sens_rows = []
     for scenario, values in dashboard["social_value_sensitivity"].items():
-        sens_rows.append({"Scenario": scenario, "Annual social value": gbp(values["Annual social value"]),
-                           "10yr Social value NPV": gbp(values["10yr Social value NPV"])})
+        sens_rows.append({"Scenario": scenario, "Annual social value": gbp_compact(values["Annual social value"]),
+                           "10yr Social value NPV": gbp_compact(values["10yr Social value NPV"])})
     render_brand_table(pd.DataFrame(sens_rows))
 
     st.markdown("**Social Value Composition: Annual Impacts**")
     comp_rows = []
     for area, values in dashboard["composition_annual"].items():
-        comp_rows.append({"Impact Area": area, "Annual": gbp(values["Annual"]),
+        comp_rows.append({"Impact Area": area, "Annual": gbp_compact(values["Annual"]),
                            "% of annual total": pct(values["% of annual total"])})
     render_brand_table(pd.DataFrame(comp_rows))
 
     st.markdown("**Social Value Composition: One-off Impacts**")
-    render_stat_row([(area, gbp(value)) for area, value in dashboard["composition_oneoff"].items()])
+    render_stat_row([(area, gbp_compact(value)) for area, value in dashboard["composition_oneoff"].items()])
 
     st.subheader("Core Development Outputs")
     co = dashboard["core_outputs"]
@@ -519,21 +529,21 @@ if st.session_state.guidance_done and st.session_state.show_results:
     ef_rows = []
     for measure, values in dashboard["econ_fiscal"].items():
         if isinstance(values, dict):
-            ef_rows.append({"Measure": measure, "Annual": gbp(values["Annual"]), "10-Year NPV": gbp(values["10-Year NPV"])})
+            ef_rows.append({"Measure": measure, "Annual": gbp_compact(values["Annual"]), "10-Year NPV": gbp_compact(values["10-Year NPV"])})
         else:
-            ef_rows.append({"Measure": measure, "Annual": "-", "10-Year NPV": gbp(values)})
+            ef_rows.append({"Measure": measure, "Annual": "-", "10-Year NPV": gbp_compact(values)})
     render_brand_table(pd.DataFrame(ef_rows))
 
     st.markdown("**Economic and Fiscal Value Sensitivity (±10%)**")
     efs_rows = []
     for measure, values in dashboard["econ_fiscal_sensitivity"].items():
-        efs_rows.append({"Measure": measure, "-10%": gbp(values["-10%"]), "Central": gbp(values["Central"]), "+10%": gbp(values["+10%"])})
+        efs_rows.append({"Measure": measure, "-10%": gbp_compact(values["-10%"]), "Central": gbp_compact(values["Central"]), "+10%": gbp_compact(values["+10%"])})
     render_brand_table(pd.DataFrame(efs_rows))
 
     st.subheader("One-off Construction Impacts")
     con_o = dashboard["construction_oneoff"]
     c1, c2 = st.columns(2)
-    c1.metric("Net additional GVA", gbp(con_o["Net additional GVA"]))
+    c1.metric("Net additional GVA", gbp_compact(con_o["Net additional GVA"]))
     c2.metric("Net additional PYE jobs", f"{con_o['Net additional PYE jobs']:,.0f}")
 
     st.subheader("Commercial Floorspace Impacts")
@@ -543,14 +553,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
         if "FTE jobs" in measure: 
             cfs_rows.append({"Measure": measure, "-10%": f"{values['-10%']:,.0f}", "Central": f"{values['Central']:,.0f}", "+10%": f"{values['+10%']:,.0f}"})
         else:    
-            cfs_rows.append({"Measure": measure, "-10%": gbp(values["-10%"]), "Central": gbp(values["Central"]), "+10%": gbp(values["+10%"])})
+            cfs_rows.append({"Measure": measure, "-10%": gbp_compact(values["-10%"]), "Central": gbp_compact(values["Central"]), "+10%": gbp_compact(values["+10%"])})
     render_brand_table(pd.DataFrame(cfs_rows))
 
     st.subheader("PBSA Impacts (Supplementary)")
     pbsa_dashboard = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
     c1, c2 = st.columns(2)
     c1.metric("Net total FTE jobs", f"{pbsa_dashboard['Net total FTE jobs']:,.0f}")
-    c2.metric("Net total GVA", gbp(pbsa_dashboard["Net total GVA"]))
+    c2.metric("Net total GVA", gbp_compact(pbsa_dashboard["Net total GVA"]))
 
     st.divider()
     st.header("Detailed Impacts")
@@ -572,9 +582,9 @@ if st.session_state.guidance_done and st.session_state.show_results:
                   "Gross £ value": v["Gross £ value"], "Net additional £ value": v["Net additional £ value"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Gross £ value", gbp(v["Gross £ value"]))
+        c1.metric("Gross £ value", gbp_compact(v["Gross £ value"]))
         c2.metric("Net factor", pct(v["Net factor"]))
-        c3.metric("Net additional £ value", gbp(v["Net additional £ value"]))
+        c3.metric("Net additional £ value", gbp_compact(v["Net additional £ value"]))
         st.write(f"Deadweight {pct(v['Deadweight'])} - Displacement {pct(v['Displacement'])} - Leakage {pct(v['Leakage'])}")
 
     with st.expander("2. Embodied Carbon"):
@@ -593,8 +603,8 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c2.metric("Comparator (baseline) factor", f"{ec['Comparator carbon factor']:,.0f}")
         c1, c2, c3 = st.columns(3)
         c1.metric("Gross tCO2e saved", f"{ec['Gross tCO2e saved']:,.0f}")
-        c2.metric("Gross £ value", gbp(ec["Gross £ value"]))
-        c3.metric("Net additional £ value", gbp(ec["Net additional £ value"]))
+        c2.metric("Gross £ value", gbp_compact(ec["Gross £ value"]))
+        c3.metric("Net additional £ value", gbp_compact(ec["Net additional £ value"]))
         st.write(f"Deadweight {pct(ec['Deadweight'])} - Displacement {pct(ec['Displacement'])} - Leakage {pct(ec['Leakage'])}")
 
     with st.expander("3. Environmental Quality"):
@@ -608,8 +618,8 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c2.metric("Brownfield / gap site impact", f"{eq['Brownfield / gap site impact']:.4f}")
         c3.metric("Vacant units impact", f"{eq['Vacant units impact']:.4f}")
         c1, c2 = st.columns(2)
-        c1.metric("Gross annual wellbeing value", gbp(eq["Gross annual wellbeing value"]))
-        c2.metric("Net additional annual value", gbp(eq["Net additional annual wellbeing value"]))
+        c1.metric("Gross annual wellbeing value", gbp_compact(eq["Gross annual wellbeing value"]))
+        c2.metric("Net additional annual value", gbp_compact(eq["Net additional annual wellbeing value"]))
         st.write(f"Deadweight {pct(eq['Deadweight'])} - Displacement {pct(eq['Displacement'])} - Leakage {pct(eq['Leakage'])}")
 
     with st.expander("4. Resident Population"):
@@ -640,8 +650,8 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1.metric("Residents newly meeting threshold", f"{hw['Residents newly meeting threshold']:,.0f}")
         c2.metric("Residents already active", f"{hw['Residents already active']:,.0f}")
         c1, c2 = st.columns(2)
-        c1.metric("Gross annual health value", gbp(hw["Gross annual health value"]))
-        c2.metric("Net additional annual value", gbp(hw["Net additional annual health value"]))
+        c1.metric("Gross annual health value", gbp_compact(hw["Gross annual health value"]))
+        c2.metric("Net additional annual value", gbp_compact(hw["Net additional annual health value"]))
         st.write(f"Deadweight {pct(hw['Deadweight'])} - Displacement {pct(hw['Displacement'])} - Leakage {pct(hw['Leakage'])}")
 
     with st.expander("6. Civic Engagement"):
@@ -655,8 +665,8 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c2.metric("Deprivation uplift", f"{ce['Deprivation uplift']:.4f}")
         c3.metric("Social infrastructure uplift", f"{ce['Social infrastructure uplift']:.4f}")
         c1, c2 = st.columns(2)
-        c1.metric("Gross annual value", gbp(ce["Gross annual wellbeing value"]))
-        c2.metric("Net additional annual value", gbp(ce["Net additional annual wellbeing value"]))
+        c1.metric("Gross annual value", gbp_compact(ce["Gross annual wellbeing value"]))
+        c2.metric("Net additional annual value", gbp_compact(ce["Net additional annual wellbeing value"]))
         st.write(f"Deadweight {pct(ce['Deadweight'])} - Displacement {pct(ce['Displacement'])} - Leakage {pct(ce['Leakage'])}")
 
     with st.expander("7. Travel Time & Costs"):
@@ -670,12 +680,12 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c2.metric("Total households", f"{tt['Total households']:,.0f}")
         c3.metric("Households with 1+ car", f"{tt['Households with 1+ car']:,.0f}")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Travel cost savings", gbp(tt["Gross travel cost savings"]))
-        c2.metric("Time savings", gbp(tt["Gross time savings"]))
-        c3.metric("Car ownership savings", gbp(tt["Gross reduced car ownership savings"]))
+        c1.metric("Travel cost savings", gbp_compact(tt["Gross travel cost savings"]))
+        c2.metric("Time savings", gbp_compact(tt["Gross time savings"]))
+        c3.metric("Car ownership savings", gbp_compact(tt["Gross reduced car ownership savings"]))
         c1, c2 = st.columns(2)
-        c1.metric("Gross annual value", gbp(tt["Gross annual value"]))
-        c2.metric("Net additional annual value", gbp(tt["Net additional annual value"]))
+        c1.metric("Gross annual value", gbp_compact(tt["Gross annual value"]))
+        c2.metric("Net additional annual value", gbp_compact(tt["Net additional annual value"]))
         st.write(f"Deadweight {pct(tt['Deadweight'])} - Displacement {pct(tt['Displacement'])} - Leakage {pct(tt['Leakage'])}")
 
     with st.expander("8. Cost of Crime"):
@@ -686,14 +696,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
             r = crime[category]
             rows.append({"Category": category, "Incidents used": f"{r['Incidents used']:,.0f}",
                          "Reduction rate": pct(r["Reduction rate"]), "Cost/incident": gbp(r["Cost per incident"]),
-                         "Gross value": gbp(r["Gross value"]), "Net value": gbp(r["Net value"])})
+                         "Gross value": gbp_compact(r["Gross value"]), "Net value": gbp_compact(r["Net value"])})
             key_rows.append({"Category": category, "Gross value": r["Gross value"], "Net value": r["Net value"]})
         crime_df = pd.DataFrame(rows).set_index("Category")
         sheets["8. Cost of Crime"] = pd.DataFrame(key_rows).set_index("Category")
         render_brand_table(crime_df.reset_index())
         c1, c2 = st.columns(2)
-        c1.metric("Total gross value", gbp(crime["Total"]["Gross value"]))
-        c2.metric("Total net value", gbp(crime["Total"]["Net value"]))
+        c1.metric("Total gross value", gbp_compact(crime["Total"]["Gross value"]))
+        c2.metric("Total net value", gbp_compact(crime["Total"]["Net value"]))
         st.write(f"Net factor: {pct(crime['Net factor'])}")
 
     with st.expander("9. Economic Activity"):
@@ -702,8 +712,8 @@ if st.session_state.guidance_done and st.session_state.show_results:
         for row_name in ["Private detached", "Private semi/terrace", "Private low-rise flat", "Private higher density flat", "Private older persons",
                           "Social detached", "Social semi/terrace", "Social low-rise flat", "Social higher density flat", "Social older persons"]:
             r = econ[row_name]
-            rows.append({"Row": row_name, "Households": f"{r['Households']:,.0f}", "Gross spend": gbp(r["Gross TC spend"]),
-                         "Gross jobs": f"{r['Gross FTE jobs']:,.0f}", "Gross GVA": gbp(r["Gross GVA"])})
+            rows.append({"Row": row_name, "Households": f"{r['Households']:,.0f}", "Gross spend": gbp_compact(r["Gross TC spend"]),
+                         "Gross jobs": f"{r['Gross FTE jobs']:,.0f}", "Gross GVA": gbp_compact(r["Gross GVA"])})
         econ_df = pd.DataFrame(rows).set_index("Row")
         render_brand_table(econ_df.reset_index())
         t = econ["Total"]
@@ -712,13 +722,13 @@ if st.session_state.guidance_done and st.session_state.show_results:
                   "Net TC spend": t["Net TC spend"], "Net FTE jobs": t["Net FTE jobs"], "Net GVA": t["Net GVA"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total gross spend", gbp(t["Gross TC spend"]))
+        c1.metric("Total gross spend", gbp_compact(t["Gross TC spend"]))
         c2.metric("Total gross jobs", f"{t['Gross FTE jobs']:,.0f}")
-        c3.metric("Total gross GVA", gbp(t["Gross GVA"]))
+        c3.metric("Total gross GVA", gbp_compact(t["Gross GVA"]))
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total net spend", gbp(t["Net TC spend"]))
+        c1.metric("Total net spend", gbp_compact(t["Net TC spend"]))
         c2.metric("Total net jobs", f"{t['Net FTE jobs']:,.0f}")
-        c3.metric("Total net GVA", gbp(t["Net GVA"]))
+        c3.metric("Total net GVA", gbp_compact(t["Net GVA"]))
         st.write(f"Net factor: {pct(econ['Net factor'])}")
 
     with st.expander("10. Construction"):
@@ -728,12 +738,12 @@ if st.session_state.guidance_done and st.session_state.show_results:
                   "Net additional PYE jobs": con["Net additional PYE jobs"], "Net additional GVA": con["Net additional GVA"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Capital cost", gbp(con["Capital cost"]))
+        c1.metric("Capital cost", gbp_compact(con["Capital cost"]))
         c2.metric("Gross PYE jobs", f"{con['Gross PYE jobs']:,.0f}")
-        c3.metric("Gross GVA", gbp(con["Gross GVA"]))
+        c3.metric("Gross GVA", gbp_compact(con["Gross GVA"]))
         c1, c2 = st.columns(2)
         c1.metric("Net additional PYE jobs", f"{con['Net additional PYE jobs']:,.0f}")
-        c2.metric("Net additional GVA", gbp(con["Net additional GVA"]))
+        c2.metric("Net additional GVA", gbp_compact(con["Net additional GVA"]))
         st.write(f"Deadweight {pct(con['Deadweight'])} - Displacement {pct(con['Displacement'])} - "
                  f"Leakage {pct(con['Leakage'])} - Multiplier {con['Multiplier']:.2f}x")
 
@@ -744,10 +754,10 @@ if st.session_state.guidance_done and st.session_state.show_results:
                   "Net additional fiscal value": fis["Net additional fiscal value"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Gross council tax", gbp(fis["Gross council tax"]))
-        c2.metric("Gross rental returns", gbp(fis["Gross rental returns"]))
-        c3.metric("Gross fiscal value", gbp(fis["Gross fiscal value"]))
-        st.metric("Net additional fiscal value", gbp(fis["Net additional fiscal value"]))
+        c1.metric("Gross council tax", gbp_compact(fis["Gross council tax"]))
+        c2.metric("Gross rental returns", gbp_compact(fis["Gross rental returns"]))
+        c3.metric("Gross fiscal value", gbp_compact(fis["Gross fiscal value"]))
+        st.metric("Net additional fiscal value", gbp_compact(fis["Net additional fiscal value"]))
         st.write(f"Deadweight {pct(fis['Deadweight'])} - Displacement {pct(fis['Displacement'])} - Leakage {pct(fis['Leakage'])}")
 
     with st.expander("12. Land Values"):
@@ -762,13 +772,13 @@ if st.session_state.guidance_done and st.session_state.show_results:
             st.warning("Insufficient data, provide GDV and baseline land value in Land & Infrastructure inputs.")
         else:
             c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Total GDV", gbp(lv["Total GDV"]))
-            c2.metric("Capital cost", gbp(lv["Capital cost"]))
-            c3.metric("Developer return", gbp(lv["Developer return"]))
-            c4.metric("Baseline land value", gbp(lv["Existing use / baseline land value"]))
+            c1.metric("Total GDV", gbp_compact(lv["Total GDV"]))
+            c2.metric("Capital cost", gbp_compact(lv["Capital cost"]))
+            c3.metric("Developer return", gbp_compact(lv["Developer return"]))
+            c4.metric("Baseline land value", gbp_compact(lv["Existing use / baseline land value"]))
             c1, c2 = st.columns(2)
-            c1.metric("Gross land value uplift", gbp(lv["Gross land value uplift"]))
-            c2.metric("Net additional land value uplift", gbp(lv["Net additional land value uplift"]))
+            c1.metric("Gross land value uplift", gbp_compact(lv["Gross land value uplift"]))
+            c2.metric("Net additional land value uplift", gbp_compact(lv["Net additional land value uplift"]))
             st.write(f"Deadweight {pct(lv['Deadweight'])} - Displacement {pct(lv['Displacement'])} - Leakage {pct(lv['Leakage'])}")
 
     with st.expander("13. Public Infrastructure"):
@@ -780,14 +790,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
                   "Net annual revenue saving": pi["Net annual revenue saving"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2 = st.columns(2)
-        c1.metric("Avoided capital cost per unit", gbp(pi["Avoided capital cost per unit"]))
+        c1.metric("Avoided capital cost per unit", gbp_compact(pi["Avoided capital cost per unit"]))
         c2.metric("Total residential units", f"{pi['Total residential units']:,.0f}")
         c1, c2 = st.columns(2)
-        c1.metric("Gross infrastructure savings (one-off)", gbp(pi["Gross infrastructure savings"]))
-        c2.metric("Net infrastructure savings (one-off)", gbp(pi["Net infrastructure savings"]))
+        c1.metric("Gross infrastructure savings (one-off)", gbp_compact(pi["Gross infrastructure savings"]))
+        c2.metric("Net infrastructure savings (one-off)", gbp_compact(pi["Net infrastructure savings"]))
         c1, c2 = st.columns(2)
-        c1.metric("Gross annual revenue saving", gbp(pi["Gross annual revenue saving"]))
-        c2.metric("Net annual revenue saving", gbp(pi["Net annual revenue saving"]))
+        c1.metric("Gross annual revenue saving", gbp_compact(pi["Gross annual revenue saving"]))
+        c2.metric("Net annual revenue saving", gbp_compact(pi["Net annual revenue saving"]))
         st.write(f"Deadweight {pct(pi['Deadweight'])} - Displacement {pct(pi['Displacement'])} - Leakage {pct(pi['Leakage'])}")
 
     with st.expander("14. Commercial Floorspace (Optional)"):
@@ -797,7 +807,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
         for category in commercial_floorspace_inputs:
             r = cf[category]
             rows.append({"Category": category, "Floorspace (m²)": f"{r['Floorspace']:,.0f}",
-                         "FTE jobs": f"{r['FTE jobs']:,.0f}", "Gross GVA": gbp(r["Gross GVA"])})
+                         "FTE jobs": f"{r['FTE jobs']:,.0f}", "Gross GVA": gbp_compact(r["Gross GVA"])})
             key_rows.append({"Category": category, "FTE jobs": r["FTE jobs"], "Gross GVA": r["Gross GVA"]})
         cf_df = pd.DataFrame(rows).set_index("Category")
         sheets["14. Commercial Floorspace"] = pd.DataFrame(key_rows).set_index("Category")
@@ -806,10 +816,10 @@ if st.session_state.guidance_done and st.session_state.show_results:
         o = cf["Occupancy-adjusted (75%)"]
         c1, c2 = st.columns(2)
         c1.metric("Total gross jobs", f"{t['Gross FTE jobs']:,.0f}")
-        c2.metric("Total gross GVA", gbp(t["Gross GVA"]))
+        c2.metric("Total gross GVA", gbp_compact(t["Gross GVA"]))
         c1, c2 = st.columns(2)
         c1.metric("Occupancy-adjusted (75%) jobs", f"{o['Gross FTE jobs']:,.0f}")
-        c2.metric("Occupancy-adjusted (75%) GVA", gbp(o["Gross GVA"]))
+        c2.metric("Occupancy-adjusted (75%) GVA", gbp_compact(o["Gross GVA"]))
 
     with st.expander("14b. Purpose Built Student Accommodation"):
         pbsa = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
@@ -822,14 +832,14 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1.metric("Number of rooms", f"{pbsa['Number of rooms']:,.0f}")
         c2.metric("On-site FTE jobs (e.g. concierge)", f"{pbsa['On-site FTE jobs (e.g. concierge)']:,.0f}")
         c1, c2 = st.columns(2)
-        c1.metric("Total off-site spend", gbp(pbsa["Total off-site spend"]))
+        c1.metric("Total off-site spend", gbp_compact(pbsa["Total off-site spend"]))
         c2.metric("Off-site FTE jobs", f"{pbsa['Off-site FTE jobs']:,.0f}")
         c1, c2 = st.columns(2)
         c1.metric("Gross total FTE jobs", f"{pbsa['Gross total FTE jobs']:,.0f}")
-        c2.metric("Gross total GVA", gbp(pbsa["Gross total GVA"]))
+        c2.metric("Gross total GVA", gbp_compact(pbsa["Gross total GVA"]))
         c1, c2 = st.columns(2)
         c1.metric("Net total FTE jobs", f"{pbsa['Net total FTE jobs']:,.0f}")
-        c2.metric("Net total GVA", gbp(pbsa["Net total GVA"]))
+        c2.metric("Net total GVA", gbp_compact(pbsa["Net total GVA"]))
         st.write(f"Deadweight {pct(pbsa['Deadweight'])} - Displacement {pct(pbsa['Displacement'])} - Multiplier {pbsa['Multiplier']:.2f}x")
 
 
