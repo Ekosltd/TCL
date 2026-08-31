@@ -6,7 +6,7 @@ from calculations import (
     transport_emissions_valuation, embodied_carbon, environmental_quality,
     health_wellbeing, civic_engagement, travel_time_and_costs, cost_of_crime,
     economic_activity, construction_activity, fiscal, land_values,
-    public_infrastructure, commercial_floorspace_indicator, pbsa_indicator,
+    public_infrastructure, commercial_floorspace_indicator,
     population_by_typology, demographic_employment_outputs,
 )
 
@@ -33,7 +33,7 @@ def get_discount_factors(assumptions: dict) -> dict:
 
 
 def build_dashboard(development_mix, place_scenario_controls, place_scenario_user_inputs,
-                     crime_inputs, land_infra_inputs, commercial_floorspace_inputs, pbsa_inputs,
+                     crime_inputs, land_infra_inputs, commercial_floorspace_inputs,
                      additionality_questions, assumptions) -> dict:
 
     factors = get_discount_factors(assumptions)
@@ -54,7 +54,6 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
     land = land_values(land_infra_inputs, place_scenario_user_inputs, additionality_questions, assumptions)
     infra = public_infrastructure(development_mix, assumptions)
     commercial = commercial_floorspace_indicator(commercial_floorspace_inputs, additionality_questions, assumptions)
-    pbsa = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
     population = population_by_typology(development_mix, assumptions)
     demographics = demographic_employment_outputs(development_mix, assumptions)
 
@@ -124,14 +123,14 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
         "Total Residents": round(population["Total"]["Total residents"]),
         "Working-age Adults": demographics["Working-age adults"],
         "Employed Adults": demographics["Employed adults"],
-        "FTE jobs": round(econ["Total"]["Net FTE jobs"] + pbsa["Net total FTE jobs"], 2),
+        "FTE jobs": round(econ["Total"]["Net FTE jobs"], 2),
     }
 
     # =============================================================
     # ECONOMIC AND FISCAL VALUE — reported separately
     # =============================================================
-    tc_spend_annual = round(econ["Total"]["Net TC spend"] + pbsa["Net total spend"], -3)
-    gva_annual = round(econ["Total"]["Net GVA"] + pbsa["Net total GVA"], -3)
+    tc_spend_annual = round(econ["Total"]["Net TC spend"], -3)
+    gva_annual = round(econ["Total"]["Net GVA"], -3)
     fiscal_annual = round(fis["Net additional fiscal value"], -3)
 
     tc_spend_npv = round(tc_spend_annual * central_f, -3)
@@ -141,9 +140,8 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
     land_oneoff = land["Net additional land value uplift"]
     infra_oneoff = round(infra["Net infrastructure savings"], -3)
 
-    # --- Public Infrastructure annual revenue saving stream, discounted like the other annual values ---
+    # --- Public Infrastructure annual revenue saving stream, no NPV (per updated instruction) ---
     infra_revenue_annual = infra["Net annual revenue saving"]
-    infra_revenue_npv = round(infra_revenue_annual * central_f, -3)
 
     econ_fiscal = {
         "Town Centre Spend": {"Annual": tc_spend_annual, "10-Year NPV": tc_spend_npv},
@@ -151,7 +149,7 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
         "Fiscal": {"Annual": fiscal_annual, "10-Year NPV": fiscal_npv},
         "Land value uplift (one off)": land_oneoff,
         "Public infrastructure (one off)": infra_oneoff,
-        "Public infrastructure revenue savings": {"Annual": infra_revenue_annual, "10-Year NPV": infra_revenue_npv},
+        "Public infrastructure revenue savings (annual)": infra_revenue_annual,
     }
 
     def sens(x, round_to=-3):
@@ -169,7 +167,6 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
         "Land value uplift - 10yr NPV": sens(land_oneoff),
         "Public infrastructure - 10yr NPV": sens(infra_oneoff),
         "Public infrastructure revenue savings - Annual value": sens(infra_revenue_annual),
-        "Public infrastructure revenue savings - 10yr NPV": sens(infra_revenue_npv),
     }
 
     # =============================================================
