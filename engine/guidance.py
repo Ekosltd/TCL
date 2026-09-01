@@ -113,12 +113,12 @@ RESULTS_SECTIONS = [
     },
     {
         "title": "Net Additional Economic and Fiscal Value",
-        "description": "Economic and fiscal value: spend, jobs, GVA, council tax and rental "
-                        "returns. Annually and as a 10-year NPV, with the same ±10% sensitivity range.",
+        "description": "Economic and fiscal value: spend, jobs, GVA, fiscal value "
+                        "Annually and as a 10-year NPV, with the same ±10% sensitivity range.",
     },
     {
         "title": "One-off Construction Impacts",
-        "description": "Construction-phase jobs and GVA, shown separately as they're one-off "
+        "description": "Construction phase jobs and GVA, shown separately as they're one-off "
                         "rather than recurring annual value.",
     },
     {
@@ -135,8 +135,7 @@ RESULTS_SECTIONS = [
                 "Gross value: the impact before adjusting for additionality",
                 "Deadweight, Displacement, Leakage (and Multiplier, where relevant): the "
                 "additionality factors applied",
-                "Net additional value: the final, additionality-adjusted figure which is what "
-                "feeds into the dashboard totals above",
+                "Net additional value: the final, additionality-adjusted figures "
             ],
         },
     },
