@@ -142,7 +142,7 @@ MONEY_LABELS = {
 }
 
 PERCENT_COLUMNS = {"Baseline share", "TCL share"}
-MONEY_COLUMNS = {"Gross value", "Net value", "Gross GVA"}
+MONEY_COLUMNS = {"Gross value", "Net value", "Gross GVA", "Net GVA"}
 
 
 def _append_row(ws, values, formats=None):
@@ -603,10 +603,12 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1, c2 = st.columns(2)
         c1.metric("Proposed carbon factor", f"{ec['Proposed carbon factor']:,.0f}")
         c2.metric("Comparator (baseline) factor", f"{ec['Comparator carbon factor']:,.0f}")
-        c1, c2, c3 = st.columns(3)
+        c1, c2 = st.columns(2)
         c1.metric("Gross tCO2e saved", f"{ec['Gross tCO2e saved']:,.0f}")
-        c2.metric("Gross £ value", gbp_compact(ec["Gross £ value"]))
-        c3.metric("Net additional £ value", gbp_compact(ec["Net additional £ value"]))
+        c2.metric("Net additional tCO2e saved", f"{ec['Net additional tCO2e saved']:,.0f}")
+        c1, c2 = st.columns(2)
+        c1.metric("Gross £ value", gbp(ec["Gross £ value"]))
+        c2.metric("Net additional one-off £ value", gbp(ec["Net additional £ value"]))
         st.write(f"Deadweight {pct(ec['Deadweight'])} - Displacement {pct(ec['Displacement'])} - Leakage {pct(ec['Leakage'])}")
 
     with st.expander("3. Environmental Quality"):
@@ -615,10 +617,11 @@ if st.session_state.guidance_done and st.session_state.show_results:
             list({"Gross annual wellbeing value": eq["Gross annual wellbeing value"],
                   "Net additional annual wellbeing value": eq["Net additional annual wellbeing value"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         c1.metric("Population within 500m", f"{eq['Population within 500m']:,.0f}")
-        c2.metric("Brownfield / gap site impact", f"{eq['Brownfield / gap site impact']:.4f}")
-        c3.metric("Vacant units impact", f"{eq['Vacant units impact']:.4f}")
+        c2.metric("Brownfield / gap site", f"{eq['Brownfield / gap site impact']:.4f}")
+        c3.metric("Vacant units", f"{eq['Vacant units impact']:.4f}")
+        c4.metric("Heritage asset", f"{eq['Heritage impact']:.4f}")
         c1, c2 = st.columns(2)
         c1.metric("Gross annual wellbeing value", gbp_compact(eq["Gross annual wellbeing value"]))
         c2.metric("Net additional annual value", gbp_compact(eq["Net additional annual wellbeing value"]))
@@ -646,8 +649,8 @@ if st.session_state.guidance_done and st.session_state.show_results:
                   "Net additional annual health value": hw["Net additional annual health value"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2 = st.columns(2)
-        c1.metric("Total residents (weighted)", f"{hw['Total residents (weighted)']:,.0f}")
-        c2.metric("Minutes uplift / person / week", f"{hw['Minutes uplift per person/week']:,.0f}")
+        c1.metric("Total residents", f"{hw['Total residents (weighted)']:,.0f}")
+        c2.metric("Minutes uplift per person/week", f"{hw['Minutes uplift per person/week']:,.0f}")
         c1, c2 = st.columns(2)
         c1.metric("Residents newly meeting threshold", f"{hw['Residents newly meeting threshold']:,.0f}")
         c2.metric("Residents already active", f"{hw['Residents already active']:,.0f}")
@@ -678,7 +681,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
                   "Net additional annual value": tt["Net additional annual value"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total residents (weighted)", f"{tt['Total residents (weighted)']:,.0f}")
+        c1.metric("Total residents", f"{tt['Total residents (weighted)']:,.0f}")
         c2.metric("Total households", f"{tt['Total households']:,.0f}")
         c3.metric("Households with 1+ car", f"{tt['Households with 1+ car']:,.0f}")
         c1, c2, c3 = st.columns(3)
@@ -714,8 +717,9 @@ if st.session_state.guidance_done and st.session_state.show_results:
         for row_name in ["Private detached", "Private semi/terrace", "Private low-rise flat", "Private higher density flat", "Private older persons",
                           "Social detached", "Social semi/terrace", "Social low-rise flat", "Social higher density flat", "Social older persons"]:
             r = econ[row_name]
-            rows.append({"Row": row_name, "Households": f"{r['Households']:,.0f}", "Gross spend": gbp_compact(r["Gross TC spend"]),
-                         "Gross jobs": f"{r['Gross FTE jobs']:,.0f}", "Gross GVA": gbp_compact(r["Gross GVA"])})
+            rows.append({"Row": row_name, "Households": f"{r['Households']:,.0f}",
+                         "Gross spend": gbp(r["Gross TC spend"]), "Gross jobs": f"{r['Gross FTE jobs']:,.0f}", "Gross GVA": gbp(r["Gross GVA"]),
+                         "Net spend": gbp(r["Net TC spend"]), "Net jobs": f"{r['Net FTE jobs']:,.0f}", "Net GVA": gbp(r["Net GVA"])})
         econ_df = pd.DataFrame(rows).set_index("Row")
         render_brand_table(econ_df.reset_index())
         t = econ["Total"]
@@ -802,15 +806,17 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c2.metric("Net annual revenue saving", gbp_compact(pi["Net annual revenue saving"]))
         st.write(f"Deadweight {pct(pi['Deadweight'])} - Displacement {pct(pi['Displacement'])} - Leakage {pct(pi['Leakage'])}")
 
-    with st.expander("14. Commercial Floorspace (Optional)"):
+    with st.expander("14. Commercial Floorspace"):
         cf = commercial_floorspace_indicator(commercial_floorspace_inputs, additionality_questions, assumptions)
         rows = []
         key_rows = []
         for category in commercial_floorspace_inputs:
             r = cf[category]
             rows.append({"Category": category, "Floorspace (m²)": f"{r['Floorspace']:,.0f}",
-                         "FTE jobs": f"{r['FTE jobs']:,.0f}", "Gross GVA": gbp_compact(r["Gross GVA"])})
-            key_rows.append({"Category": category, "FTE jobs": r["FTE jobs"], "Gross GVA": r["Gross GVA"]})
+                         "Gross Jobs": f"{r['FTE jobs']:,.0f}", "Gross GVA": gbp(r["Gross GVA"]),
+                         "Net Jobs": f"{r['Net FTE jobs']:,.0f}", "Net GVA": gbp(r["Net GVA"])})
+            key_rows.append({"Category": category, "FTE jobs": r["FTE jobs"], "Gross GVA": r["Gross GVA"],
+                              "Net FTE jobs": r["Net FTE jobs"], "Net GVA": r["Net GVA"]})
         cf_df = pd.DataFrame(rows).set_index("Category")
         sheets["14. Commercial Floorspace"] = pd.DataFrame(key_rows).set_index("Category")
         render_brand_table(cf_df.reset_index())
@@ -826,21 +832,21 @@ if st.session_state.guidance_done and st.session_state.show_results:
     with st.expander("15. Purpose Built Student Accommodation"):
         pbsa = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
         sheets["15. PBSA"] = pd.DataFrame(
-            list({"Gross total FTE jobs": pbsa["Gross total FTE jobs"], "Gross total GVA": pbsa["Gross total GVA"],
-                  "Net total FTE jobs": pbsa["Net total FTE jobs"], "Net total GVA": pbsa["Net total GVA"],
+            list({"Gross total jobs": pbsa["Gross total FTE jobs"], "Gross total GVA": pbsa["Gross total GVA"],
+                  "Net total jobs": pbsa["Net total FTE jobs"], "Net total GVA": pbsa["Net total GVA"],
                   "Net total spend": pbsa["Net total spend"]}.items()),
             columns=["Measure", "Value"]).set_index("Measure")
         c1, c2 = st.columns(2)
         c1.metric("Number of rooms", f"{pbsa['Number of rooms']:,.0f}")
-        c2.metric("On-site FTE jobs (e.g. concierge)", f"{pbsa['On-site FTE jobs (e.g. concierge)']:,.0f}")
+        c2.metric("On-site jobs (e.g. concierge)", f"{pbsa['On-site FTE jobs (e.g. concierge)']:,.0f}")
         c1, c2 = st.columns(2)
         c1.metric("Total off-site spend", gbp_compact(pbsa["Total off-site spend"]))
-        c2.metric("Off-site FTE jobs", f"{pbsa['Off-site FTE jobs']:,.0f}")
+        c2.metric("Off-site jobs", f"{pbsa['Off-site FTE jobs']:,.0f}")
         c1, c2 = st.columns(2)
-        c1.metric("Gross total FTE jobs", f"{pbsa['Gross total FTE jobs']:,.0f}")
+        c1.metric("Gross total jobs", f"{pbsa['Gross total FTE jobs']:,.0f}")
         c2.metric("Gross total GVA", gbp_compact(pbsa["Gross total GVA"]))
         c1, c2 = st.columns(2)
-        c1.metric("Net total FTE jobs", f"{pbsa['Net total FTE jobs']:,.0f}")
+        c1.metric("Net total jobs", f"{pbsa['Net total FTE jobs']:,.0f}")
         c2.metric("Net total GVA", gbp_compact(pbsa["Net total GVA"]))
         st.write(f"Deadweight {pct(pbsa['Deadweight'])} - Displacement {pct(pbsa['Displacement'])} - Multiplier {pbsa['Multiplier']:.2f}x")
 
