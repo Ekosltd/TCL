@@ -219,11 +219,12 @@ def build_excel_export(dashboard: dict, sheets: dict[str, pd.DataFrame]) -> byte
     ws.append(["Net Additional Economic and Fiscal Value"])
     for measure, values in dashboard["econ_fiscal"].items():
         if isinstance(values, dict):
-            _append_row(ws, [measure, values["Annual"], values["10-Year NPV"]],
+            annual_val = values.get("Annual", "-")
+            npv_val = values.get("10-Year NPV", "-")
+            _append_row(ws, [measure, annual_val, npv_val],
                         [None, CURRENCY_FORMAT, CURRENCY_FORMAT])
         else:
             _append_row(ws, [measure, "-", values], [None, None, CURRENCY_FORMAT])
-    ws.append([])
 
     ws.append(["Economic and Fiscal Value Sensitivity (+/-10%)"])
     ws.append(["Measure", "-10%", "Central", "+10%"])
@@ -529,10 +530,11 @@ if st.session_state.guidance_done and st.session_state.show_results:
     ef_rows = []
     for measure, values in dashboard["econ_fiscal"].items():
         if isinstance(values, dict):
-            ef_rows.append({"Measure": measure, "Annual": gbp_compact(values["Annual"]), "10-Year NPV": gbp_compact(values["10-Year NPV"])})
+            annual_val = gbp_compact(values["Annual"]) if "Annual" in values else "-"
+            npv_val = gbp_compact(values["10-Year NPV"]) if "10-Year NPV" in values else "-"
+            ef_rows.append({"Measure": measure, "Annual": annual_val, "10-Year NPV": npv_val})
         else:
             ef_rows.append({"Measure": measure, "Annual": "-", "10-Year NPV": gbp_compact(values)})
-    render_brand_table(pd.DataFrame(ef_rows))
 
     st.markdown("**Economic and Fiscal Value Sensitivity (±10%)**")
     efs_rows = []

@@ -149,7 +149,7 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
         "Fiscal": {"Annual": fiscal_annual, "10-Year NPV": fiscal_npv},
         "Land value uplift (one off)": land_oneoff,
         "Public infrastructure (one off)": infra_oneoff,
-        "Public infrastructure revenue savings (annual)": infra_revenue_annual,
+        "Public infrastructure revenue savings (annual)": {"Annual": infra_revenue_annual},
     }
 
     def sens(x, round_to=-3):
