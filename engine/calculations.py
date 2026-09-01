@@ -310,8 +310,6 @@ def demographic_employment_outputs(development_mix: dict, assumptions: dict) -> 
         + total_older * pop_employ.loc["65+ share", "Older person"]
     )
 
-    # Uses the AVERAGE of private/social employment rates for everyone else (matches original B17),
-    # but the Older person rate for the Older Persons typology
     employed_adults = round(
         working_age_other * (
             (pop_employ.loc["Employment rate", "Private"] + pop_employ.loc["Employment rate", "Social/affordable"])
@@ -452,25 +450,20 @@ def embodied_carbon(development_mix: dict, place_scenario_controls: dict, additi
     gia = get_total_gia(development_mix, assumptions)
     total_gia = gia["Total GIA"]
 
-    # --- Proposed carbon factor: column depends on target (Low/Medium/High), row depends on development type ---
     target_column_map = {"Low": "Low upfront", "Medium": "Medium upfront", "High": "High upfront"}
     proposed_carbon_factor = float(carbon.loc[development_type, target_column_map[embodied_target]])
 
-    # --- Comparator (baseline) carbon factor, from the same development-type row ---
     comparator_carbon_factor = float(carbon.loc[development_type, "Baseline comparator"])
 
-    # --- End of life factor (same for every development type in this sheet) ---
     end_of_life_factor = float(carbon.loc[development_type, "End of life factor"])
 
-    # --- Gross impact ---
     upfront_tco2e = total_gia * (comparator_carbon_factor - proposed_carbon_factor) / 1000
     end_of_life_tco2e = upfront_tco2e * end_of_life_factor
     gross_tco2e = round(upfront_tco2e + end_of_life_tco2e, -2)
 
-    carbon_value = 100  # £/t — hardcoded in original model, same as Transport Emissions
+    carbon_value = 100  
     gross_value = round(gross_tco2e * carbon_value, -3)
 
-    # --- Net additional impact: uses Environmental additionality, same as Transport Emissions ---
     additionality = additionality_environmental(additionality_questions)
     deadweight = additionality["Deadweight"]
     displacement = additionality["Displacement"]
@@ -588,7 +581,7 @@ def health_wellbeing(place_scenario_controls: dict, development_mix: dict, addit
     wellbeing = assumptions["environ_wellbeing"]
 
     demographics = demographic_employment_outputs(development_mix, assumptions)
-    # Weighted "total residents" specific to this indicator: children 25%, working-age 90%, older adults 75%
+    
     total_residents_weighted = (
         demographics["Children"] * 0.25
         + demographics["Working-age adults"] * 0.9
@@ -733,10 +726,10 @@ def travel_time_and_costs(place_scenario_controls: dict, place_scenario_user_inp
     total_social_homes = sum(v["Social/Affordable Homes"] for v in development_mix.values())
     total_households = total_private_homes + total_social_homes
 
-    annual_km_reduction_per_person = 229  # hardcoded in original model
+    annual_km_reduction_per_person = 229  
     operating_cost_per_km = float(general.loc["Car operating cost", "Value"])
     value_of_time = float(general.loc["Value of time", "Value"])
-    annual_minutes_saved_per_person = 752  # hardcoded in original model
+    annual_minutes_saved_per_person = 752 
 
     # --- Households with 1+ car: override, or weighted fallback (private/social homes x their car ownership rates) ---
     car_override = place_scenario_user_inputs["% of households in new TCL development with 1+ car"]
@@ -756,7 +749,7 @@ def travel_time_and_costs(place_scenario_controls: dict, place_scenario_user_inp
 
     gross_annual_value = round(gross_travel_cost_savings + gross_time_savings + gross_reduced_car_ownership_savings, -3)
 
-    # Uses SOCIAL additionality (matches Assumptions!B145)
+    # Uses SOCIAL additionality
     additionality = additionality_social(additionality_questions)
     deadweight = additionality["Deadweight"]
     displacement = additionality["Displacement"]
@@ -990,7 +983,7 @@ def fiscal(development_mix: dict, additionality_questions: dict, assumptions: di
     deadweight = additionality["Deadweight"]
     displacement = additionality["Displacement"]
 
-    # Fiscal has no real Leakage question — uses a fixed default instead
+    
     leakage = float(additionality_mappings.loc["Fiscal default for leakage", "Leakage"])
 
     net_factor = (1 - deadweight) * (1 - displacement) * (1 - leakage)
@@ -1092,7 +1085,7 @@ def public_infrastructure(development_mix: dict, assumptions: dict) -> dict:
 
     total_units = sum(v["Private Homes"] + v["Social/Affordable Homes"] for v in development_mix.values())
 
-    # Fixed default additionality — not from a user question, applies to all developments
+    
     row = additionality_mappings.loc["Public infrastructure  - default for all "]
     deadweight = float(row["Deadweight"])
     displacement = float(row["Displacement"])
@@ -1101,11 +1094,11 @@ def public_infrastructure(development_mix: dict, assumptions: dict) -> dict:
 
     net_factor = (1 - deadweight) * (1 - displacement) * (1 - leakage) * multiplier
 
-    # --- One-off capital saving (unchanged) ---
+
     gross_infrastructure_savings = round(avoided_cost_per_unit * total_units, -3)
     net_infrastructure_savings = round(gross_infrastructure_savings * net_factor, -3)
 
-    # --- New: annual revenue saving stream ---
+    
     gross_annual_revenue_saving = round(annual_revenue_saving_per_unit * total_units, -3)
     net_annual_revenue_saving = round(gross_annual_revenue_saving * net_factor, -3)
 

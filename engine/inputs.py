@@ -44,7 +44,6 @@ development_mix = {
     }
 }
 
-### none values are derived from assumptions
 
 def get_floorspace(typology: str, tenure: str, development_mix: dict, assumptions: dict) -> float:
     override_key = f"{tenure.capitalize()} Floor Area per unit (m2)"
@@ -53,7 +52,6 @@ def get_floorspace(typology: str, tenure: str, development_mix: dict, assumption
     if override is not None and override > 0:
         return override
 
-    # Falls back to the assumptions default --> looked up by typology NAME
     return assumptions["dwellingbytypology"].loc[typology, "Floorspace m2"]
 
 

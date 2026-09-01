@@ -1,6 +1,5 @@
 """
-Admin panel: lets SFT upload a new assumptions.xlsx, committed to GitHub so it
-persists across app restarts. Password-gated; SFT never touches GitHub directly.
+Admin panel: lets SFT upload a new assumptions.xlsx
 """
 
 import base64

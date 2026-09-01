@@ -3,8 +3,6 @@ Additionality Questions
 
 """
 
-### ADDITIONALITY QUESTIONS###
-
 additionality_questions = {
     "Environmental": {
         "Deadweight": {

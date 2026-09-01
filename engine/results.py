@@ -64,7 +64,7 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
     transport_net = transport["Net additional £ value"]
     travel_net = travel["Net additional annual value"]
     crime_net = crime["Total"]["Net value"]
-    carbon_net = carbon["Net additional £ value"]  # one-off, not annuitised
+    carbon_net = carbon["Net additional £ value"]  
 
     # =============================================================
     # SOCIAL VALUE — Annual + 10-Year NPV
@@ -127,7 +127,7 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
     }
 
     # =============================================================
-    # ECONOMIC AND FISCAL VALUE — reported separately
+    # ECONOMIC AND FISCAL VALUE
     # =============================================================
     tc_spend_annual = round(econ["Total"]["Net TC spend"], -3)
     gva_annual = round(econ["Total"]["Net GVA"], -3)
@@ -140,7 +140,6 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
     land_oneoff = land["Net additional land value uplift"]
     infra_oneoff = round(infra["Net infrastructure savings"], -3)
 
-    # --- Public Infrastructure annual revenue saving stream, no NPV (per updated instruction) ---
     infra_revenue_annual = infra["Net annual revenue saving"]
 
     econ_fiscal = {
@@ -178,7 +177,7 @@ def build_dashboard(development_mix, place_scenario_controls, place_scenario_use
     }
 
     # =============================================================
-    # COMMERCIAL FLOORSPACE (supplementary) — sensitivity
+    # COMMERCIAL FLOORSPACE
     # =============================================================
     cf_gva_annual = commercial["Total"]["Net GVA"]
     cf_gva_npv = round(cf_gva_annual * central_f, -3)

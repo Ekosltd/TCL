@@ -5,7 +5,7 @@ Guidance content shown to the user before they start entering inputs.
 GUIDANCE_TITLE = "How the Model Works"
 
 GUIDANCE_INTRO = """
-This tool estimates the social, economic, environmental and fiscal impact of a proposed Town Centre Living (TCL) development. You'll work through six input sections, then the model calculates a full Impact Dashboard plus more detailed results of the 14 indicators.
+This tool estimates the social, economic, environmental and fiscal impact of a proposed Town Centre Living (TCL) development. You'll work through six input sections, then the model calculates a full Impact Dashboard plus more detailed results of the 15 indicators.
 """
 
 INPUT_SECTIONS = [
@@ -96,7 +96,7 @@ Additionality Questions.
 
 GUIDANCE_RESULTS_INTRO = """
 Once you've completed all six sections, the model produces an **Impact Dashboard** which is a summary of 
-the overall value, followed by 14 **detailed indicator impacts**.
+the overall value, followed by 15 **detailed indicator impacts**.
 """
 
 RESULTS_SECTIONS = [
@@ -127,7 +127,7 @@ RESULTS_SECTIONS = [
     },
     {
         "title": "Detailed Impacts",
-        "description": "All 14 indicators, each in its own expandable section, showing the gross value, the deadweight/displacement/leakage factors "
+        "description": "All 15 indicators, each in its own expandable section, showing the gross value, the deadweight/displacement/leakage factors "
                         "applied, and the resulting net additional value.",
         "extra": {
             "heading": "Every indicator follows the same pattern",

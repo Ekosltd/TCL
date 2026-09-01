@@ -468,7 +468,7 @@ elif not st.session_state.show_results:
 
 if st.session_state.guidance_done and st.session_state.show_results:
 
-    if st.button("← Edit Inputs", use_container_width=True):
+    if st.button("Edit Inputs", use_container_width=True):
         st.session_state.show_results = False
         st.rerun()
 
@@ -490,7 +490,7 @@ if st.session_state.guidance_done and st.session_state.show_results:
         )
         st.stop()
 
-    sheets = {}  # collects DataFrames for the Excel export
+    sheets = {} 
 
     st.header("Impact Dashboard")
 
@@ -823,9 +823,9 @@ if st.session_state.guidance_done and st.session_state.show_results:
         c1.metric("Occupancy-adjusted (75%) jobs", f"{o['Gross FTE jobs']:,.0f}")
         c2.metric("Occupancy-adjusted (75%) GVA", gbp_compact(o["Gross GVA"]))
 
-    with st.expander("14b. Purpose Built Student Accommodation"):
+    with st.expander("15. Purpose Built Student Accommodation"):
         pbsa = pbsa_indicator(pbsa_inputs, additionality_questions, assumptions)
-        sheets["14b. PBSA"] = pd.DataFrame(
+        sheets["15. PBSA"] = pd.DataFrame(
             list({"Gross total FTE jobs": pbsa["Gross total FTE jobs"], "Gross total GVA": pbsa["Gross total GVA"],
                   "Net total FTE jobs": pbsa["Net total FTE jobs"], "Net total GVA": pbsa["Net total GVA"],
                   "Net total spend": pbsa["Net total spend"]}.items()),
