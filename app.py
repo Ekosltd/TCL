@@ -305,6 +305,12 @@ additionality_questions = st.session_state.additionality_questions
 
 render_header("Town Centre Living Appraisal Model")
 
+st.caption(
+    "This impact appraisal model was launched in September 2026. If you have any feedback, "
+    "please contact Scottish Futures Trust at "
+    "[mailbox@scottishfuturestrust.org.uk](mailto:mailbox@scottishfuturestrust.org.uk)."
+)
+
 
 # =================================================================================================
 # GUIDANCE PAGE
@@ -313,12 +319,6 @@ render_header("Town Centre Living Appraisal Model")
 if not st.session_state.guidance_done:
     st.header(GUIDANCE_TITLE)
     st.markdown(GUIDANCE_INTRO)
-
-    st.caption(
-        "This impact appraisal model was launched in September 2026. If you have any feedback, "
-        "please contact Scottish Futures Trust at "
-        "[mailbox@scottishfuturestrust.org.uk](mailto:mailbox@scottishfuturestrust.org.uk)."
-    )
 
     render_guidance_sections(INPUT_SECTIONS, body_key="what_you_need")
 
