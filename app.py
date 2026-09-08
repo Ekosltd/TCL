@@ -340,7 +340,7 @@ elif not st.session_state.show_results:
             key="dm_target_total",
             help="Enter the total number of homes planned. The typology breakdown below must add up to this figure before you can view results."
         )
-        st.markdown(":red[**Floor areas are optional** — leave at 0 to use the assumptions default.]")
+        st.markdown(":red[**Floor areas are optional**. Leave at 0 to use the assumptions default.]")
 
         for typology in development_mix:
             st.subheader(typology)
