@@ -283,6 +283,8 @@ if "show_results" not in st.session_state:
     st.session_state.show_results = False
 if "guidance_done" not in st.session_state:
     st.session_state.guidance_done = False
+if "dev_mix_target_total" not in st.session_state:
+    st.session_state.dev_mix_target_total = 0
 
 assumptions = get_assumptions()
 render_admin_panel(get_assumptions.clear)
@@ -332,7 +334,14 @@ elif not st.session_state.show_results:
 
     # --- Development Mix ---
     with input_tabs[0]:
-        st.caption("Enter the number of homes per typology. Floor area are optional, leave at 0 to use the assumptions default.")
+        st.session_state.dev_mix_target_total = st.number_input(
+            "Total number of homes for this development",
+            min_value=0, value=int(st.session_state.dev_mix_target_total),
+            key="dm_target_total",
+            help="Enter the total number of homes planned. The typology breakdown below must add up to this figure before you can view results."
+        )
+        st.markdown(":red[**Floor areas are optional** — leave at 0 to use the assumptions default.]")
+
         for typology in development_mix:
             st.subheader(typology)
             c1, c2, c3, c4 = st.columns(4)
@@ -350,6 +359,23 @@ elif not st.session_state.show_results:
                 "Social floor area (m2)", min_value=0.0,
                 value=float(development_mix[typology]["Social Floor Area per unit (m2)"]),
                 key=f"dm_{typology}_sf")
+
+        st.divider()
+
+        entered_total = sum(v["Private Homes"] + v["Social/Affordable Homes"] for v in development_mix.values())
+        target_total = st.session_state.dev_mix_target_total
+        dev_mix_valid = (entered_total == target_total)
+        st.session_state.dev_mix_valid = dev_mix_valid
+
+        c1, c2 = st.columns(2)
+        c1.metric("Homes entered (sum of typologies)", f"{entered_total:,.0f}")
+        c2.metric("Target total homes", f"{target_total:,.0f}")
+
+        if dev_mix_valid:
+            st.success("Typology breakdown matches the target total.")
+        else:
+            st.error(f"Typology breakdown ({entered_total:,.0f}) does not match the target total ({target_total:,.0f}). "
+                      "You won't be able to view results until these match.")
 
         st.divider()
         gia = get_total_gia(development_mix, assumptions)
@@ -457,10 +483,12 @@ elif not st.session_state.show_results:
             st.divider()
 
         st.divider()
-        if st.button("Show Results", type="primary", use_container_width=True):
+        if not st.session_state.get("dev_mix_valid", True):
+            st.error("Go back to Development Mix. The typology breakdown must match the target total before you can view results.")
+        if st.button("Show Results", type="primary", use_container_width=True,
+                     disabled=not st.session_state.get("dev_mix_valid", True)):
             st.session_state.show_results = True
             st.rerun()
-
 
 # =================================================================================================
 # RESULTS
