@@ -314,6 +314,12 @@ if not st.session_state.guidance_done:
     st.header(GUIDANCE_TITLE)
     st.markdown(GUIDANCE_INTRO)
 
+    st.caption(
+        "This impact appraisal model was launched in September 2026. If you have any feedback, "
+        "please contact Scottish Futures Trust at "
+        "[mailbox@scottishfuturestrust.org.uk](mailto:mailbox@scottishfuturestrust.org.uk)."
+    )
+
     render_guidance_sections(INPUT_SECTIONS, body_key="what_you_need")
 
     brand_callout(GUIDANCE_NOTE)
@@ -398,7 +404,7 @@ elif not st.session_state.show_results:
         st.subheader("Numerical inputs")
 
         place_scenario_user_inputs["How many people live within 250m - 500m of the proposed development"] = st.number_input(
-            "How many people live within 250m - 500m of the proposed development",
+            "How many people live within 500m of the proposed development",
             min_value=0, value=int(place_scenario_user_inputs["How many people live within 250m - 500m of the proposed development"]),
             key="psui_pop",
             help=PLACE_SCENARIO_USER_INPUT_NOTES.get("How many people live within 250m - 500m of the proposed development"))
