@@ -306,9 +306,9 @@ additionality_questions = st.session_state.additionality_questions
 render_header("Town Centre Living Appraisal Model")
 
 st.caption(
-    "This impact appraisal model was launched by Scottish Futures Trust in September 2026 - any questions or feedback relating to, "
+    "This impact appraisal model was launched by Scottish Futures Trust in September 2026 - any questions or feedback relating to "
     "it should be sent by email to "
-    "[mailbox@scottishfuturestrust.org.uk](mailto:mailbox@scottishfuturestrust.org.uk). Please refer to the disclaimer at the foot of this webpage"
+    "[mailbox@scottishfuturestrust.org.uk](mailto:mailbox@scottishfuturestrust.org.uk). Please refer to the disclaimer at the foot of this webpage."
 )
 
 # =================================================================================================
