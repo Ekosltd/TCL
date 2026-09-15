@@ -312,24 +312,6 @@ st.caption(
 )
 
 # =================================================================================================
-# FOOTER DISCLAIMER
-# =================================================================================================
-
-st.divider()
-st.caption(
-    "This impact appraisal model (\"the model\") was developed by Scottish Futures Trust and launched "
-    "in September 2026. All intellectual property rights in the model are owned by and vest solely in "
-    "Scottish Futures Trust. The model has been prepared by Scottish Futures Trust on a non-reliance "
-    "basis and thus does not constitute advice. It is intended to help inform project appraisals but "
-    "should not be relied up for investment decisions. Users are responsible for conducting their own "
-    "investigations and procuring their own advice in relation to specific projects or opportunities. "
-    "Scottish Futures Trust accepts no liability for any losses arising out of or in any way connected "
-    "with the use of, or inability to use, the model, and disclaims all responsibility for the "
-    "consequences of any reliance placed upon the model or any decisions based on use of the model by "
-    "any user or recipient."
-)
-
-# =================================================================================================
 # GUIDANCE PAGE
 # =================================================================================================
 
@@ -912,3 +894,21 @@ if st.session_state.guidance_done and st.session_state.show_results:
         use_container_width=True,
         key="download_final",
     )
+
+# =================================================================================================
+# FOOTER DISCLAIMER
+# =================================================================================================
+
+st.divider()
+st.caption(
+    "This impact appraisal model (\"the model\") was developed by Scottish Futures Trust and launched "
+    "in September 2026. All intellectual property rights in the model are owned by and vest solely in "
+    "Scottish Futures Trust. The model has been prepared by Scottish Futures Trust on a non-reliance "
+    "basis and thus does not constitute advice. It is intended to help inform project appraisals but "
+    "should not be relied up for investment decisions. Users are responsible for conducting their own "
+    "investigations and procuring their own advice in relation to specific projects or opportunities. "
+    "Scottish Futures Trust accepts no liability for any losses arising out of or in any way connected "
+    "with the use of, or inability to use, the model, and disclaims all responsibility for the "
+    "consequences of any reliance placed upon the model or any decisions based on use of the model by "
+    "any user or recipient."
+)
