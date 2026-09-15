@@ -321,7 +321,7 @@ st.caption(
     "in September 2026. All intellectual property rights in the model are owned by and vest solely in "
     "Scottish Futures Trust. The model has been prepared by Scottish Futures Trust on a non-reliance "
     "basis and thus does not constitute advice. It is intended to help inform project appraisals but "
-    "should not be relied upon for investment decisions. Users are responsible for conducting their own "
+    "should not be relied up for investment decisions. Users are responsible for conducting their own "
     "investigations and procuring their own advice in relation to specific projects or opportunities. "
     "Scottish Futures Trust accepts no liability for any losses arising out of or in any way connected "
     "with the use of, or inability to use, the model, and disclaims all responsibility for the "
